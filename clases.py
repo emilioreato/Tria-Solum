@@ -14,9 +14,12 @@ class Piece:
         self.pos_y = y
         self.rad = rad
 
-    def mover(self, move_x, move_y):
+    def mover(self, move_x, move_y, change_mana):
         self.pos_x += move_x
         self.pos_y += move_y
+        if change_mana:
+            if self.mana > 0:
+                self.mana -= 1
 
     def dibujar(self, screen, color, pos):
         pygame.draw.circle(screen, color, pos, self.rad)
@@ -26,3 +29,9 @@ class Piece:
         return distancia <= self.rad  # Devuelve True si el clic está dentro del círculo
 
     # def get_center(self):
+
+
+class Mage(Piece):
+    def __init__(self, x, y, rad, mana):
+        super().__init__(x, y, rad)
+        self.mana = mana
