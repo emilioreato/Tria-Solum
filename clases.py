@@ -1,5 +1,7 @@
 import pygame
 import os
+import pyautogui
+import math
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
 
 
@@ -23,9 +25,13 @@ class Piece:
         self.agility = init_agility
         self.defense = init_defense
         self.damage = init_damage"""
+        Mage.set_dimension()
+
+    def set_dimension(mult=1, screenratio=1):
         if Piece.pieces_dimension is 0:
-            from main import height  # Importación diferida
-            Piece.pieces_dimension = height // 14
+            _, screen_height = pyautogui.size()  # gets the current resolution
+            height = round(screen_height/screenratio)  # reduces the height
+            Piece.pieces_dimension = round((height // 14) / mult)
 
     def mover(self, move_x, move_y, change_mana):
         self.pos_x += move_x
@@ -35,7 +41,7 @@ class Piece:
                 self.mana -= 1
 
     def draw(self, screen, img, pos=0):
-        print(self.pos_x, self.pos_y)
+        # print(self.pos_x, self.pos_y)
         if pos:
             screen.blit(img, (pos[0]-Piece.pieces_dimension//2, pos[1]-Piece.pieces_dimension//2))
         else:
@@ -48,6 +54,17 @@ class Piece:
 
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
         return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
+
+    def detect_closest_point(self, points_list, mouse_pos):
+        lowest = 100000
+        for point in points_list:
+            distance = math.sqrt((mouse_pos[0]-point[0])**2 + (mouse_pos[1]-point[1])**2)
+
+            if distance < lowest:
+                lowest = distance
+                selected_point = point
+
+        return points_list.index(selected_point)
 
 
 class Mage(Piece):
