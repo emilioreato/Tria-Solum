@@ -35,6 +35,8 @@ active_pieces = [
 selected_piece = None
 board_size = 8
 
+selected_background = 0
+
 music_pause_state = False
 generated_values = []
 draw_music_slider = False
@@ -74,10 +76,13 @@ set_up_window()
 
 def load_resources():
 
-    global bkg_img, icon, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
+    global backgrounds, icon, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
 
-    bkg_img = pygame.image.load("resources\\background.png").convert()  # load some images, converts it for optimization and then scales them.
-    bkg_img = pygame.transform.smoothscale(bkg_img, (width, height))
+    backgrounds = []
+    for i in range(6):
+        bkg_img = pygame.image.load(f"resources\\background ({i+1}).jpg").convert()  # load some images, converts it for optimization and then scales them.
+        bkg_img = pygame.transform.smoothscale(bkg_img, (width, height))
+        backgrounds.append(bkg_img)
 
     cursor_default = pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha()
     cursor_default = pygame.transform.smoothscale(cursor_default, (screen_height * 0.805 // 43, screen_height // 43))
@@ -138,7 +143,7 @@ manager = pygame_gui.UIManager((width, height))
 
 
 def draw():
-    screen.blit(bkg_img, (0, 0))  # display background
+    screen.blit(backgrounds[selected_background], (0, 0))  # display background
     for piece in active_pieces:
         piece.draw(screen, piece.image)
     screen.blit(close_button, (height//0.6, height // 25))
@@ -201,12 +206,18 @@ while run:  # Main loop
 
     iterations += 1  # iterator used to control events
 
-    if iterations % 500 == 0 and music_pause_state:
+    if iterations % 500 == 0 and not music_pause_state:
         if not pygame.mixer.music.get_busy():
             play_song()
             # pygame.mixer.music.pause()
             # pygame.mixer.music.unpause()
             # pygame.mixer.music.play(-1)
+
+    if iterations % 600 == 0:
+        print("xd")
+        selected_background += 1
+        if selected_background > 7:
+            selected_background = 0
 
     if follow_mouse and selected_piece != None:
         active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = event.pos
@@ -259,6 +270,7 @@ while run:  # Main loop
                     follow_mouse = False
                     active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = center_points[active_pieces[selected_piece].detect_closest_point(center_points, event.pos)]
 
+            elif event.button == 2:
                 if music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
                     music_pause_state = not music_pause_state
                     if music_pause_state:
