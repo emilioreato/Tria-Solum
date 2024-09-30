@@ -23,12 +23,9 @@ show_cursor_image = True
 center_points = []
 active_pieces = [
     clases.Mage(500, 500, 13, "blue"),
-    clases.Mage(600, 600, 13, "red"),
     clases.Mage(700, 700, 13, "red"),
-    clases.Archer(800, 500, 13, "blue"),
     clases.Archer(1000, 600, 13, "red"),
     clases.Archer(900, 700, 13, "blue"),
-    clases.Knight(800, 400, 13, "blue"),
     clases.Knight(1000, 900, 13, "red"),
     clases.Knight(900, 1100, 13, "blue")
 ]
@@ -36,12 +33,13 @@ selected_piece = None
 board_size = 8
 
 selected_background = 0
+BACKGROUNDS_AMOUNT = 7
 
 music_pause_state = False
 generated_values = []
 draw_music_slider = False
 generation_count = 0
-playlist = [
+PLAYLIST = [
     "resources\\sounds\\soundtracks\\track1 (gerilim).mp3",
     "resources\\sounds\\soundtracks\\track2 (saver dontrikh).mp3",
     "resources\\sounds\\soundtracks\\track3 (vioglt dontrikh).mp3"
@@ -65,22 +63,24 @@ def set_up_window(screenratio=1, frame=0):  # is the ratio screen/window
 
     pygame.display.set_caption("Gambit Game 2024®")  # set a window title
 
-    pygame.display.set_icon(pygame.image.load("resources\\indicator.png"))  # sets window icon
+    pygame.display.set_icon(pygame.image.load("resources\\images\\indicator.png").convert_alpha())  # sets window icon
 
     timer = pygame.time.Clock()  # create a clock object to set fps
     dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
 
 
 set_up_window()
+# clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
 
 def load_resources():
 
-    global backgrounds, icon, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
+    global backgrounds, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
 
     backgrounds = []
-    for i in range(6):
-        bkg_img = pygame.image.load(f"resources\\background ({i+1}).jpg").convert()  # load some images, converts it for optimization and then scales them.
+    for i in range(0, BACKGROUNDS_AMOUNT):
+        print(i)
+        bkg_img = pygame.image.load(f"resources\\images\\background{i}.png").convert()  # load some images, converts it for optimization and then scales them.
         bkg_img = pygame.transform.smoothscale(bkg_img, (width, height))
         backgrounds.append(bkg_img)
 
@@ -112,13 +112,14 @@ load_resources()
 
 
 def create_center_points():
-    center_points.clear()
+    center_points.clear()  # clean previous points (wrongly sized probably)
     square_size = height/13.55
-    for row in range(0, board_size):
-        value = row*square_size*math.sqrt(2)/2
-        ix = width/2 - value
-        iy = height/14.1 + value
-        for elements in range(0, board_size):
+    for row in range(0, board_size):  # create 8 rows
+        value = row*square_size*math.sqrt(2)/2  # how much each row should go back on x axis
+        ix = width/2 - value  # first point on the row x value (base value for entire row)
+        iy = height/14.1 + value  # first point on the row y value (base value for entire row)
+        for elements in range(0, board_size):  # create 8 elements in each row (columns)
+            # create a tuple with the x and y coor of each point and then append it to the points list.
             new_point = (round(ix+elements*square_size*numpy.cos(numpy.deg2rad(45))), round(iy+elements*square_size*numpy.sin(numpy.deg2rad(45))))
             center_points.append(new_point)
 
@@ -143,36 +144,38 @@ manager = pygame_gui.UIManager((width, height))
 
 
 def draw():
-    screen.blit(backgrounds[selected_background], (0, 0))  # display background
-    for piece in active_pieces:
+    screen.blit(backgrounds[selected_background], (0, 0))  # displaying background
+    for piece in active_pieces:    # displaying all pieces
         piece.draw(screen, piece.image)
-    screen.blit(close_button, (height//0.6, height // 25))
+    screen.blit(close_button, (height//0.6, height // 25))  # displaying buttons
     screen.blit(settings_button, (height//0.62, height // 25))
     screen.blit(minimize_button, (height//0.64, height // 25))
     screen.blit(music_button, (height//0.66, height // 25))
 
-    if draw_music_slider:
+    if draw_music_slider:  # displaying music slider
         pass
 
-    """for i in center_points:
-        pygame.draw.circle(screen, (255, 255, 255), (i[0], i[1]), 40)"""
+    for i in center_points:
+        pygame.draw.circle(screen, (255, 255, 255), (i[0], i[1]), 40)
 
-    if show_cursor_image:
-        screen.blit(cursor_default, pygame.mouse.get_pos())  # display cursor
+    if show_cursor_image:  # displaying cursor
+        screen.blit(cursor_default, pygame.mouse.get_pos())
 
-    pygame.display.flip()  # Actualizar la pantalla #.update()
+    pygame.display.flip()  # update the screen. /    .update() also works
 
 
-def play_song(playlist=playlist):
+def play_song(playlist=PLAYLIST):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
 
     def generate():
         while True:
 
             global generation_count, generated_values
 
+            iterations_without_repeating = 2
+
             generation_count += 1  # Aumenta el contador de generaciones
 
-            if generation_count > 2:  # Si hemos alcanzado el número de generaciones, reinicia la lista
+            if generation_count > iterations_without_repeating:  # Si hemos alcanzado el número de generaciones, reinicia la lista
                 generated_values = []
                 generation_count = 1  # Reinicia el contador
 
@@ -188,12 +191,12 @@ def play_song(playlist=playlist):
 
     track = next(generate())
 
-    pygame.mixer.music.load(track)  # Carga la pista
+    pygame.mixer.music.load(track)  # loads the track
     print(f"Reproduciendo: {track}")
 
-    pygame.mixer.music.play()
+    pygame.mixer.music.play()  # plays the track
 
-    pygame.mixer.music.set_volume(0.6)
+    pygame.mixer.music.set_volume(0.2)
 
 
 def stopmusic():
@@ -202,6 +205,7 @@ def stopmusic():
 
 run = True
 iterations = 0
+init_time = time.time()
 while run:  # Main loop
 
     iterations += 1  # iterator used to control events
@@ -212,12 +216,6 @@ while run:  # Main loop
             # pygame.mixer.music.pause()
             # pygame.mixer.music.unpause()
             # pygame.mixer.music.play(-1)
-
-    if iterations % 600 == 0:
-        print("xd")
-        selected_background += 1
-        if selected_background > 7:
-            selected_background = 0
 
     if follow_mouse and selected_piece != None:
         active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = event.pos
@@ -231,7 +229,7 @@ while run:  # Main loop
 
                 mouse_pos = event.pos  # get the current mouse position
 
-                for piece in active_pieces:
+                for piece in active_pieces:  # Checks if any piece was clicked
                     if piece.is_clicked(mouse_pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
                         print("pieza clickeada")
                         follow_mouse = True
@@ -268,7 +266,9 @@ while run:  # Main loop
             if event.button == 1:
                 if follow_mouse:
                     follow_mouse = False
-                    active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = center_points[active_pieces[selected_piece].detect_closest_point(center_points, event.pos)]
+                    which_point = active_pieces[selected_piece].detect_closest_point(center_points, event.pos)
+                    active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = center_points[which_point]
+                    active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y = piece.b64index_to_grid(which_point)  # sets the grid pos to the adecuate one
 
             elif event.button == 2:
                 if music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
@@ -278,11 +278,12 @@ while run:  # Main loop
                     else:
                         pygame.mixer.music.unpause()
 
-        elif event.type == pygame.KEYDOWN:
-            if (pygame.key.name(event.key) == "w"):
-                active_pieces[0].mover(0, 1, True)
-            elif (pygame.key.name(event.key) == "s"):
-                active_pieces[0].mover(0, -1, True)
+        elif event.type == pygame.KEYDOWN:  # if a key was pressed
+            if (pygame.key.name(event.key) == "w" and selected_background < BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
+                selected_background += 1
+            elif (pygame.key.name(event.key) == "s" and selected_background > 0):
+                selected_background -= 1
+
             elif (pygame.key.name(event.key) == "a"):
                 active_pieces[0].mover(1, 0, True)
             elif (pygame.key.name(event.key) == "d"):
