@@ -18,6 +18,7 @@ class Piece:
     def __init__(self, x, y):
         self.pos_x = x
         self.pos_y = y
+        self.image = 0
         # self.rad = rad
         """global init_hp, init_mana, init_agility, init_defense, init_damage
         self.hp = init_hp
@@ -72,9 +73,50 @@ class Mage(Piece):
     red_mage_image = pygame.image.load("resources\\red_mage.png")  # .convert()
     blue_mage_image = pygame.image.load("resources\\blue_mage.png")  # .convert()
 
-    def __init__(self, x, y, mana):
+    def __init__(self, x, y, mana, team):
         super().__init__(x, y)
         self.mana = mana
 
         Mage.red_mage_image = pygame.transform.smoothscale(Mage.red_mage_image, (Piece.pieces_dimension, Piece.pieces_dimension))
         Mage.blue_mage_image = pygame.transform.smoothscale(Mage.blue_mage_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+
+        if (team == "blue"):
+            self.image = Mage.blue_mage_image
+        else:
+            self.image = Mage.red_mage_image
+
+
+class Archer(Piece):
+
+    red_archer_image = pygame.image.load("resources\\red_archer.png")  # .convert()
+    blue_archer_image = pygame.image.load("resources\\blue_archer.png")  # .convert()
+
+    def __init__(self, x, y, mana, team):
+        super().__init__(x, y)
+        self.mana = mana
+
+        Archer.red_archer_image = pygame.transform.smoothscale(Archer.red_archer_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+        Archer.blue_archer_image = pygame.transform.smoothscale(Archer.blue_archer_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+
+        if (team == "blue"):
+            self.image = Archer.blue_archer_image
+        else:
+            self.image = Archer.red_archer_image
+
+
+class Knight(Piece):
+
+    red_knight_image = pygame.image.load("resources\\red_knight.png")  # .convert()
+    blue_knight_image = pygame.image.load("resources\\blue_knight.png")  # .convert()
+
+    def __init__(self, x, y, mana, team):
+        super().__init__(x, y)
+        self.mana = mana
+
+        Knight.red_knight_image = pygame.transform.smoothscale(Knight.red_knight_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+        Knight.blue_knight_image = pygame.transform.smoothscale(Knight.blue_knight_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+
+        if (team == "blue"):
+            self.image = Knight.blue_knight_image
+        else:
+            self.image = Knight.red_knight_image

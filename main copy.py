@@ -20,18 +20,7 @@ follow_mouse = False
 minimized_state = False
 show_cursor_image = True
 center_points = []
-active_pieces = [
-    clases.Mage(500, 500, 13, "blue"),
-    clases.Mage(600, 600, 13, "red"),
-    clases.Mage(700, 700, 13, "red"),
-    clases.Archer(800, 500, 13, "blue"),
-    clases.Archer(1000, 600, 13, "red"),
-    clases.Archer(900, 700, 13, "blue"),
-    clases.Knight(800, 400, 13, "blue"),
-    clases.Knight(1000, 900, 13, "red"),
-    clases.Knight(900, 1100, 13, "blue")
-]
-selected_piece = None
+active_pieces = []
 board_size = 8
 
 
@@ -122,11 +111,12 @@ set_mouse_usage()
 UI_REFRESH_RATE = timer.tick(dev_mode.DisplayFrequency)/1000
 manager = pygame_gui.UIManager((width, height))
 
+pieza1 = clases.Mage(500, 500, 13)
+
 
 def draw():
     screen.blit(bkg_img, (0, 0))  # display background
-    for piece in active_pieces:
-        piece.draw(screen, piece.image)
+    pieza1.draw(screen, pieza1.blue_mage_image)
     screen.blit(close_button, (height//0.6, height // 25))
     screen.blit(settings_button, (height//0.62, height // 25))
     screen.blit(minimize_button, (height//0.64, height // 25))
@@ -146,8 +136,8 @@ while run:  # Main loop
 
     # print(pieza1.pos_x, pieza1.pos_y)
 
-    if follow_mouse and selected_piece != None:
-        active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = event.pos
+    if follow_mouse:
+        pieza1.pos_x, pieza1.pos_y = event.pos
     else:
         pass
 
@@ -158,13 +148,11 @@ while run:  # Main loop
                 # Obtener la posición del ratón
                 mouse_pos = event.pos
 
-                for piece in active_pieces:
-                    if piece.is_clicked(mouse_pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
-                        print("pieza clickeada")
-                        follow_mouse = True
-                        selected_piece = active_pieces.index(piece)
+                if pieza1.is_clicked(mouse_pos, (pieza1.pos_x, pieza1.pos_y)):  # Comprobar si el clic está dentro del circulo
+                    print("pieza clickeada")
+                    follow_mouse = True
 
-                if close_button_rect.collidepoint(mouse_pos):  # check if button was clicked
+                elif close_button_rect.collidepoint(mouse_pos):  # check if button was clicked
                     pygame.quit()
                     sys.exit()
                 elif minimize_button_rect.collidepoint(mouse_pos):  # check if button was clicked
@@ -191,17 +179,17 @@ while run:  # Main loop
             if event.button == 1:
                 if follow_mouse:
                     follow_mouse = False
-                    active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = center_points[active_pieces[selected_piece].detect_closest_point(center_points, event.pos)]
+                    pieza1.pos_x, pieza1.pos_y = center_points[pieza1.detect_closest_point(center_points, event.pos)]
 
         elif event.type == pygame.KEYDOWN:
             if (pygame.key.name(event.key) == "w"):
-                active_pieces[0].mover(0, 1, True)
+                pieza1.mover(0, 1, True)
             elif (pygame.key.name(event.key) == "s"):
-                active_pieces[0].mover(0, -1, True)
+                pieza1.mover(0, -1, True)
             elif (pygame.key.name(event.key) == "a"):
-                active_pieces[0].mover(1, 0, True)
+                pieza1.mover(1, 0, True)
             elif (pygame.key.name(event.key) == "d"):
-                active_pieces[0].mover(-1, 0, True)
+                pieza1.mover(-1, 0, True)
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "escape"):
