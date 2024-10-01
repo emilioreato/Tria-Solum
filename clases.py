@@ -12,47 +12,6 @@ from win32api import EnumDisplaySettings
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
 
-# Clase para manejar el sonido con PyAudio
-
-
-class Sonido:
-    def __init__(self, archivo):
-        self.archivo = archivo
-
-    def reproducir(self):
-        # Abrir archivo de audio
-        wf = wave.open(self.archivo, 'rb')
-
-        # Inicializar PyAudio
-        p = pyaudio.PyAudio()
-
-        # Abrir el stream de audio
-        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                        channels=wf.getnchannels(),
-                        rate=wf.getframerate(),
-                        output=True)
-
-        # Leer y reproducir los datos de audio
-        data = wf.readframes(1024)
-        while data:
-            stream.write(data)
-            data = wf.readframes(1024)
-
-        # Detener el stream
-        stream.stop_stream()
-        stream.close()
-
-        # Terminar PyAudio
-        p.terminate()
-
-    def reproducir_en_hilo(self):
-        # Ejecutar la reproducción del sonido en un hilo para no bloquear el programa
-        threading.Thread(target=self.reproducir).start()
-
-
-# Crear una instancia de la clase Sonido con el archivo deseado
-efecto_sonido = Sonido("sonido_corto.wav")
-
 
 class Game:
 
@@ -103,10 +62,40 @@ class Game:
         Game.dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
 
 
+class Sonido:
+
+    archivo = None
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def reproducir():
+        wf = wave.open(Sonido.archivo, 'rb')  # Abrir archivo de audio
+        p = pyaudio.PyAudio()  # Inicializar PyAudio
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),  # Abrir el stream de audio
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+        data = wf.readframes(1024)  # Leer y reproducir los datos de audio
+        while data:
+            stream.write(data)
+            data = wf.readframes(1024)
+        stream.stop_stream()  # Detener el stream
+        stream.close()
+        p.terminate()  # Terminar PyAudio
+
+    @staticmethod
+    def reproducir_en_hilo(archivo):
+        # Ejecutar la reproducción del sonido en un hilo para no bloquear el programa
+        Sonido.archivo = archivo
+        threading.Thread(target=Sonido.reproducir).start()
+
+
 class Piece:
 
     init_hp = 100  # define some default values for ingame variables
-    init_mana = 100
+    init_mana = 11
     init_agility = 100
     init_defense = 100
     init_damage = 100
@@ -145,7 +134,9 @@ class Piece:
     def grid_to_b64index(x, y):  # it returns the opposite conversion of b64index_to_grid. given 2d array coordinates it converts them to a 1d array coordinate
         return y*Game.board_size + x
 
-    def grid_pos_to_pixels(self, grid_x, grid_y, update_variables=True):  # this function
+    def grid_pos_to_pixels(self, grid_x, grid_y, change_mana=False, update_variables=True):  # this function
+
+        # print(self.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
 
         if (grid_x < 0):  # this checks for the new position to not surpase grid limits
             grid_x = 0
@@ -158,44 +149,57 @@ class Piece:
 
         point_x, point_y = Game.center_points[Piece.grid_to_b64index(grid_x, grid_y)]
 
-        if update_variables:  # maybe you dont want to set the new converted values to the variables, maybe you just want the output, thats why.
-            self.grid_pos_x = grid_x  # updates de grid coordinates value
-            self.grid_pos_y = grid_y
-            self.pos_x = point_x  # updates de pixel position value
-            self.pos_y = point_y
+        movement_amount = Piece.get_amount_of_grid_move(grid_x, grid_y,  self.grid_pos_x,  self.grid_pos_y)
+        if (self.mana >= movement_amount):  # only if the piece has enough mana can actually move
+            if change_mana:  # this has to be above the next if conditional becuase there it updates the value of self.grid_pos_x
+                if self.mana > 0:
+                    self.mana -= movement_amount  # gets the mana variation which is the same as the squared moved
 
-        return point_x, point_y, grid_x, grid_y  # it returns specifically two tuples with the pixels values and the grid values
+            print(self.mana)
+
+            if update_variables:  # maybe you dont want to set the new converted values to the variables, maybe you just want the output, thats why.
+                self.grid_pos_x = grid_x  # updates de grid coordinates value
+                self.grid_pos_y = grid_y
+                self.pos_x = point_x  # updates de pixel position value
+                self.pos_y = point_y
+
+            return point_x, point_y, grid_x, grid_y  # it returns specifically two tuples with the pixels values and the grid values
+        else:
+            self.pos_x, self.pos_y = Game.center_points[Piece.grid_to_b64index(self.grid_pos_x, self.grid_pos_y)]
+            return None, None, None, None
 
     @staticmethod
     def detect_closest_point(mouse_pos):  # AKA transform pixels position to grid placement (opposite of grid_pos_to_pixels())
         lowest = 10000
-        for point in Game.center_points:
+        for point in Game.center_points:  # iterate every point
+            # calculate the length of the vector formed between the point and the mouse position (the distance between where the user dropped the piece and the current point)
             distance = math.sqrt((mouse_pos[0]-point[0])**2 + (mouse_pos[1]-point[1])**2)
 
-            if distance < lowest:
+            if distance < lowest:  # if the distance is lower than all the others measured, save it as the lowest
                 lowest = distance
                 selected_point = point
 
-        return Game.center_points.index(selected_point)
+        return Game.center_points.index(selected_point)  # return the position(index) in the points array of the closest point
 
     @staticmethod
     def get_amount_of_grid_move(old_x, old_y, new_x, new_y):  # it is used to calculate mana variation
         return abs(new_x-old_x)+abs(new_y-old_y)  # returns how many squares/ positions the move imlpied. the amount of squared the piece moved
 
-    def place(self, x, y, change_mana):
-        _, _, limited_x, limited_y = self.grid_pos_to_pixels(x, y)
-
-        if change_mana:
-            if self.mana > 0:
-                self.mana -= Game.get_amount_of_grid_move(x, y, limited_x, limited_y)  # gets the mana variation which is the same as the squared moved
-
     def move(self, move_x, move_y, change_mana):
 
-        self.grid_pos_to_pixels(self.grid_pos_x + move_x, self.grid_pos_y + move_y)
+        old_x = self.grid_pos_x
+        old_y = self.grid_pos_y
 
-        if change_mana:
-            if self.mana > 0:
-                self.mana -= 1
+        _, _, limited_x, limited_y = self.grid_pos_to_pixels(self.grid_pos_x + move_x, self.grid_pos_y + move_y, False)
+
+        if (limited_x != None):
+
+            # print(Piece.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
+
+            if change_mana:
+                if self.mana > 0:
+                    self.mana -= Piece.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y)
+                    # print(old_x, old_y, limited_x, limited_y, self.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y), self.mana)
 
     def draw(self, screen, img, pos=0):
         # print(self.pos_x, self.pos_y)

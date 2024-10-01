@@ -13,9 +13,11 @@ import ctypes
 import math
 import random
 
+
 # GENERAL VARIABLES
 
 game = clases.Game()
+reproductor_sfx = clases.Sonido()  # creating an instance of the sound class to play sfx sounds
 follow_mouse = False
 minimized_state = False
 show_cursor_image = True
@@ -230,11 +232,14 @@ while run:  # Main loop
             mouse_pos = event.pos  # get the current mouse position
 
             if event.button == 1:
+                reproductor_sfx.reproducir_en_hilo(game.SFX[1])
+
                 if follow_mouse:
                     follow_mouse = False
                     which_point = active_pieces[selected_piece].detect_closest_point(event.pos)
-                    active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
-                    active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y = piece.b64index_to_grid(which_point)  # sets the grid pos to the adecuate one
+                    # active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
+                    gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
+                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
 
             elif event.button == 3:
                 if music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
@@ -253,7 +258,6 @@ while run:  # Main loop
             elif (pygame.key.name(event.key) == "w"):
                 active_pieces[selected_piece].move(-2, 0, True)
                 # active_pieces[selected_piece].place(0, 7, True)
-
             elif (pygame.key.name(event.key) == "s"):
                 active_pieces[selected_piece].move(2, 0, True)
                 # active_pieces[selected_piece].place(0, 0, True)
@@ -269,7 +273,7 @@ while run:  # Main loop
                 pygame.quit()
                 sys.exit()
 
-            print(active_pieces[selected_piece].mana)
+            # print(active_pieces[selected_piece].mana)
         elif event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
