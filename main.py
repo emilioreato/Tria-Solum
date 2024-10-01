@@ -1,5 +1,3 @@
-from win32con import ENUM_CURRENT_SETTINGS
-from win32api import EnumDisplaySettings
 import win32con
 import win32gui
 import pygame
@@ -32,14 +30,13 @@ active_pieces = [
 selected_piece = None
 
 
-selected_background = 0
+selected_background = 0  # backgrounds related variables
 BACKGROUNDS_AMOUNT = 7
 
-music_pause_state = False
+music_pause_state = False  # song related variables
 generated_values = []
 draw_music_slider = False
 generation_count = 0
-
 
 # SETING THINGS UP
 
@@ -112,8 +109,10 @@ manager = pygame_gui.UIManager((game.width, game.height))
 
 def draw():
     game.screen.blit(backgrounds[selected_background], (0, 0))  # displaying background
+
     for piece in active_pieces:    # displaying all pieces
         piece.draw(game.screen, piece.image)
+
     game.screen.blit(close_button, (game.height//0.6, game.height // 25))  # displaying buttons
     game.screen.blit(settings_button, (game.height//0.62, game.height // 25))
     game.screen.blit(minimize_button, (game.height//0.64, game.height // 25))
@@ -123,7 +122,7 @@ def draw():
         pass
 
     # for i in game.center_points:
-    # d    pygame.draw.circle(screen, (255, 255, 255), (i[0], i[1]), 40)
+    #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), 40)
 
     if show_cursor_image:  # displaying cursor
         game.screen.blit(cursor_default, pygame.mouse.get_pos())
@@ -252,18 +251,25 @@ while run:  # Main loop
                 selected_background -= 1
 
             elif (pygame.key.name(event.key) == "w"):
-                active_pieces[selected_piece].mover(-1, 0, True)
+                active_pieces[selected_piece].move(-2, 0, True)
+                # active_pieces[selected_piece].place(0, 7, True)
+
             elif (pygame.key.name(event.key) == "s"):
-                active_pieces[selected_piece].mover(1, 0, True)
+                active_pieces[selected_piece].move(2, 0, True)
+                # active_pieces[selected_piece].place(0, 0, True)
             elif (pygame.key.name(event.key) == "a"):
-                active_pieces[selected_piece].mover(0, 1, True)
+                active_pieces[selected_piece].move(0, 2, True)
+                # active_pieces[selected_piece].place(7, 0, True)
             elif (pygame.key.name(event.key) == "d"):
-                active_pieces[selected_piece].mover(0, -1, True)
+                active_pieces[selected_piece].move(0, -2, True)
+                # active_pieces[selected_piece].place(7, 7, True)
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "escape"):
                 pygame.quit()
                 sys.exit()
+
+            print(active_pieces[selected_piece].mana)
         elif event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()

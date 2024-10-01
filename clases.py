@@ -1,13 +1,57 @@
-import pygame
 import os
-import pyautogui
 import math
 import numpy
+import pygame
+import pyautogui
+import threading
+import wave
+import pyaudio
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
+
+# Clase para manejar el sonido con PyAudio
+
+
+class Sonido:
+    def __init__(self, archivo):
+        self.archivo = archivo
+
+    def reproducir(self):
+        # Abrir archivo de audio
+        wf = wave.open(self.archivo, 'rb')
+
+        # Inicializar PyAudio
+        p = pyaudio.PyAudio()
+
+        # Abrir el stream de audio
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+
+        # Leer y reproducir los datos de audio
+        data = wf.readframes(1024)
+        while data:
+            stream.write(data)
+            data = wf.readframes(1024)
+
+        # Detener el stream
+        stream.stop_stream()
+        stream.close()
+
+        # Terminar PyAudio
+        p.terminate()
+
+    def reproducir_en_hilo(self):
+        # Ejecutar la reproducción del sonido en un hilo para no bloquear el programa
+        threading.Thread(target=self.reproducir).start()
+
+
+# Crear una instancia de la clase Sonido con el archivo deseado
+efecto_sonido = Sonido("sonido_corto.wav")
 
 
 class Game:
@@ -22,16 +66,12 @@ class Game:
     timer = 0
     dev_mode = 0
 
-    PLAYLIST = [
-        "resources\\sounds\\soundtracks\\track1 (gerilim).mp3",
-        "resources\\sounds\\soundtracks\\track2 (saver dontrikh).mp3",
-        "resources\\sounds\\soundtracks\\track3 (vioglt dontrikh).mp3"
-    ]
-    SFX = [
-        "resources\\sounds\\soundtracks\\track1 (gerilim).mp3",
-        "resources\\sounds\\soundtracks\\track2 (saver dontrikh).mp3",
-        "resources\\sounds\\soundtracks\\track3 (vioglt dontrikh).mp3"
-    ]
+    PLAYLIST = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ingame" on their name, aka, soundtrack files for the matches
+                for archivo in os.listdir("resources\\sounds\\soundtracks")
+                if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
+
+    SFX = [os.path.join("resources\\sounds\\sfx", archivo)  # This list contains all the paths of the sfx files
+           for archivo in os.listdir("resources\\sounds\\sfx")]
 
     def __init__(self):  # init method for evety piece where it gets another ingame values assigned
         pass
@@ -94,31 +134,64 @@ class Piece:
         # if Piece.pieces_dimension 0:
         _, screen_height = pyautogui.size()  # gets the current resolution
         height = round(screen_height/screenratio)  # reduces the height
-        Piece.pieces_dimension = round((height // 14) / mult)
-        print(Piece.pieces_dimension)
+        cls.pieces_dimension = round((height // 14) / mult)
+        print(cls.pieces_dimension)
 
     @staticmethod
-    def b64index_to_grid(index):
-        return index // 8, index % 8
+    def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
+        return index % Game.board_size, index // Game.board_size
 
     @staticmethod
-    def grid_to_b64index(x, y):
-        return y*8 + x
+    def grid_to_b64index(x, y):  # it returns the opposite conversion of b64index_to_grid. given 2d array coordinates it converts them to a 1d array coordinate
+        return y*Game.board_size + x
 
-    def grid_pos_to_pixels(self, grid_x, grid_y):
+    def grid_pos_to_pixels(self, grid_x, grid_y, update_variables=True):  # this function
+
+        if (grid_x < 0):  # this checks for the new position to not surpase grid limits
+            grid_x = 0
+        elif (grid_x > Game.board_size-1):
+            grid_x = Game.board_size-1
+        if (grid_y < 0):
+            grid_y = 0
+        elif (grid_y > Game.board_size-1):
+            grid_y = Game.board_size-1
 
         point_x, point_y = Game.center_points[Piece.grid_to_b64index(grid_x, grid_y)]
-        self.grid_pos_x = grid_x
-        self.grid_pos_y = grid_y
 
-        self.pos_x = point_x
-        self.pos_y = point_y
+        if update_variables:  # maybe you dont want to set the new converted values to the variables, maybe you just want the output, thats why.
+            self.grid_pos_x = grid_x  # updates de grid coordinates value
+            self.grid_pos_y = grid_y
+            self.pos_x = point_x  # updates de pixel position value
+            self.pos_y = point_y
 
-    def mover(self, move_x, move_y, change_mana):
-        index_x = self.grid_pos_x + move_x
-        index_y = self.grid_pos_y + move_y
+        return point_x, point_y, grid_x, grid_y  # it returns specifically two tuples with the pixels values and the grid values
 
-        self.grid_pos_to_pixels(index_x, index_y)
+    @staticmethod
+    def detect_closest_point(mouse_pos):  # AKA transform pixels position to grid placement (opposite of grid_pos_to_pixels())
+        lowest = 10000
+        for point in Game.center_points:
+            distance = math.sqrt((mouse_pos[0]-point[0])**2 + (mouse_pos[1]-point[1])**2)
+
+            if distance < lowest:
+                lowest = distance
+                selected_point = point
+
+        return Game.center_points.index(selected_point)
+
+    @staticmethod
+    def get_amount_of_grid_move(old_x, old_y, new_x, new_y):  # it is used to calculate mana variation
+        return abs(new_x-old_x)+abs(new_y-old_y)  # returns how many squares/ positions the move imlpied. the amount of squared the piece moved
+
+    def place(self, x, y, change_mana):
+        _, _, limited_x, limited_y = self.grid_pos_to_pixels(x, y)
+
+        if change_mana:
+            if self.mana > 0:
+                self.mana -= Game.get_amount_of_grid_move(x, y, limited_x, limited_y)  # gets the mana variation which is the same as the squared moved
+
+    def move(self, move_x, move_y, change_mana):
+
+        self.grid_pos_to_pixels(self.grid_pos_x + move_x, self.grid_pos_y + move_y)
 
         if change_mana:
             if self.mana > 0:
@@ -134,20 +207,8 @@ class Piece:
 
     @staticmethod
     def is_clicked(mouse_pos, pos):
-
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
         return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
-
-    def detect_closest_point(self, mouse_pos):  # AKA transform pixels position to grid placement
-        lowest = 10000
-        for point in Game.center_points:
-            distance = math.sqrt((mouse_pos[0]-point[0])**2 + (mouse_pos[1]-point[1])**2)
-
-            if distance < lowest:
-                lowest = distance
-                selected_point = point
-
-        return Game.center_points.index(selected_point)
 
 
 class Mage(Piece):
