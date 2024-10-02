@@ -62,16 +62,16 @@ class Game:
         Game.dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
 
 
-class Sonido:
+class Sound:
 
-    archivo = None
+    file = None
 
     def __init__(self):
         pass
 
     @staticmethod
-    def reproducir():
-        wf = wave.open(Sonido.archivo, 'rb')  # Abrir archivo de audio
+    def play():
+        wf = wave.open(Sound.file, 'rb')  # Abrir archivo de audio
         p = pyaudio.PyAudio()  # Inicializar PyAudio
         stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),  # Abrir el stream de audio
                         channels=wf.getnchannels(),
@@ -86,10 +86,10 @@ class Sonido:
         p.terminate()  # Terminar PyAudio
 
     @staticmethod
-    def reproducir_en_hilo(archivo):
+    def play_on_thread(file):
         # Ejecutar la reproducción del sonido en un hilo para no bloquear el programa
-        Sonido.archivo = archivo
-        threading.Thread(target=Sonido.reproducir).start()
+        Sound.file = file
+        threading.Thread(target=Sound.play).start()
 
 
 class Piece:
@@ -115,15 +115,14 @@ class Piece:
         self.damage = Piece.init_damage
 
         self.image = 0
-
-        Piece.set_dimension()
+        self.original_image = 0
 
     @classmethod
     def set_dimension(cls, mult=1, screenratio=1):
         # if Piece.pieces_dimension 0:
-        _, screen_height = pyautogui.size()  # gets the current resolution
-        height = round(screen_height/screenratio)  # reduces the height
-        cls.pieces_dimension = round((height // 14) / mult)
+        # _, screen_height = pyautogui.size()  # gets the current resolution
+        # height = round(screen_height/screenratio)  # reduces the height
+        cls.pieces_dimension = round((Game.height // 14) / mult)
         print(cls.pieces_dimension)
 
     @staticmethod
@@ -134,7 +133,7 @@ class Piece:
     def grid_to_b64index(x, y):  # it returns the opposite conversion of b64index_to_grid. given 2d array coordinates it converts them to a 1d array coordinate
         return y*Game.board_size + x
 
-    def grid_pos_to_pixels(self, grid_x, grid_y, change_mana=False, update_variables=True):  # this function
+    def grid_pos_to_pixels(self, grid_x, grid_y, change_mana=False, bypass_mana=False, update_variables=True):  # this function
 
         # print(self.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
 
@@ -150,12 +149,12 @@ class Piece:
         point_x, point_y = Game.center_points[Piece.grid_to_b64index(grid_x, grid_y)]
 
         movement_amount = Piece.get_amount_of_grid_move(grid_x, grid_y,  self.grid_pos_x,  self.grid_pos_y)
-        if (self.mana >= movement_amount):  # only if the piece has enough mana can actually move
+        if (self.mana >= movement_amount or bypass_mana):  # only if the piece has enough mana can actually move
             if change_mana:  # this has to be above the next if conditional becuase there it updates the value of self.grid_pos_x
                 if self.mana > 0:
                     self.mana -= movement_amount  # gets the mana variation which is the same as the squared moved
 
-            print(self.mana)
+            # print(self.mana)
 
             if update_variables:  # maybe you dont want to set the new converted values to the variables, maybe you just want the output, thats why.
                 self.grid_pos_x = grid_x  # updates de grid coordinates value
@@ -183,7 +182,17 @@ class Piece:
 
     @staticmethod
     def get_amount_of_grid_move(old_x, old_y, new_x, new_y):  # it is used to calculate mana variation
-        return abs(new_x-old_x)+abs(new_y-old_y)  # returns how many squares/ positions the move imlpied. the amount of squared the piece moved
+
+        movement_on_x = abs(new_x-old_x)
+        movement_on_y = abs(new_y-old_y)
+
+        mayor = max(movement_on_x, movement_on_y)
+        menor = min(movement_on_x, movement_on_y)
+
+        resto = mayor - menor
+        mayor = mayor - resto
+
+        return round(mayor+resto)  # returns how many squares/ positions the move imlpied. the amount of squared the piece moved. moving diagonally counts as just 1 square.
 
     def move(self, move_x, move_y, change_mana):
 
@@ -214,6 +223,15 @@ class Piece:
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
         return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
 
+    def resize(self, active_pieces):
+        for piece in active_pieces:
+            piece.grid_pos_to_pixels(piece.grid_pos_x, piece.grid_pos_y, change_mana=False, bypass_mana=True, update_variables=True)
+            piece.image = Piece.smoothscale_images(piece.original_image)
+
+    def smoothscale_images(image_to_scale):
+        print(image_to_scale)
+        return pygame.transform.smoothscale(image_to_scale, (Piece.pieces_dimension, Piece.pieces_dimension))
+
 
 class Mage(Piece):
 
@@ -224,13 +242,20 @@ class Mage(Piece):
         super().__init__(x, y)
         self.mana = mana
 
-        Mage.red_mage_image = pygame.transform.smoothscale(Mage.red_mage_image, (Piece.pieces_dimension, Piece.pieces_dimension))
-        Mage.blue_mage_image = pygame.transform.smoothscale(Mage.blue_mage_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+        Mage.loadimages()
 
         if (team == "blue"):
-            self.image = Mage.blue_mage_image
+            self.original_image = Mage.blue_mage_image
+            # print(self.original_image)
+            self.image = Piece.smoothscale_images(self.original_image)
+
         else:
-            self.image = Mage.red_mage_image
+            self.original_image = Mage.red_mage_image
+            self.image = Piece.smoothscale_images(self.original_image)
+
+    def loadimages():
+        Mage.red_mage_image = pygame.image.load("resources\\images\\red_mage.png")  # .convert()
+        Mage.blue_mage_image = pygame.image.load("resources\\images\\blue_mage.png")  # .convert()
 
 
 class Archer(Piece):
@@ -242,13 +267,20 @@ class Archer(Piece):
         super().__init__(x, y)
         self.mana = mana
 
-        Archer.red_archer_image = pygame.transform.smoothscale(Archer.red_archer_image, (Piece.pieces_dimension, Piece.pieces_dimension))
-        Archer.blue_archer_image = pygame.transform.smoothscale(Archer.blue_archer_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+        Archer.loadimages()
 
         if (team == "blue"):
-            self.image = Archer.blue_archer_image
+            self.original_image = Archer.blue_archer_image
+            # print(self.original_image)
+            self.image = Piece.smoothscale_images(self.original_image)
+
         else:
-            self.image = Archer.red_archer_image
+            self.original_image = Archer.red_archer_image
+            self.image = Piece.smoothscale_images(self.original_image)
+
+    def loadimages():
+        Archer.red_archer_image = pygame.image.load("resources\\images\\red_archer.png")  # .convert()
+        Archer.blue_archer_image = pygame.image.load("resources\\images\\blue_archer.png")  # .convert()
 
 
 class Knight(Piece):
@@ -260,10 +292,17 @@ class Knight(Piece):
         super().__init__(x, y)
         self.mana = mana
 
-        Knight.red_knight_image = pygame.transform.smoothscale(Knight.red_knight_image, (Piece.pieces_dimension, Piece.pieces_dimension))
-        Knight.blue_knight_image = pygame.transform.smoothscale(Knight.blue_knight_image, (Piece.pieces_dimension, Piece.pieces_dimension))
+        Knight.loadimages()
 
         if (team == "blue"):
-            self.image = Knight.blue_knight_image
+            self.original_image = Knight.blue_knight_image
+            # print(self.original_image)
+            self.image = Piece.smoothscale_images(self.original_image)
+
         else:
-            self.image = Knight.red_knight_image
+            self.original_image = Knight.red_knight_image
+            self.image = Piece.smoothscale_images(self.original_image)
+
+    def loadimages():
+        Knight.red_knight_image = pygame.image.load("resources\\images\\red_knight.png")  # .convert()
+        Knight.blue_knight_image = pygame.image.load("resources\\images\\blue_knight.png")  # .convert()
