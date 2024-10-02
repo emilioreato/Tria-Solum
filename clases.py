@@ -25,6 +25,8 @@ class Game:
     timer = 0
     dev_mode = 0
 
+    BACKGROUNDS_AMOUNT = 7
+
     PLAYLIST = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ingame" on their name, aka, soundtrack files for the matches
                 for archivo in os.listdir("resources\\sounds\\soundtracks")
                 if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
@@ -34,6 +36,39 @@ class Game:
 
     def __init__(self):  # init method for evety piece where it gets another ingame values assigned
         pass
+
+    def load_resources(self):
+
+        # global backgrounds, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
+
+        Game.backgrounds = []
+        for i in range(0, Game.BACKGROUNDS_AMOUNT):
+            bkg_img = pygame.image.load(f"resources\\images\\background{i}.png").convert()  # load some images, converts it for optimization and then scales them.
+            bkg_img = pygame.transform.smoothscale(bkg_img, (Game.width, Game.height))
+            Game.backgrounds.append(bkg_img)
+
+        cursor_default = pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha()
+        Game.cursor_default = pygame.transform.smoothscale(cursor_default, (Game.screen_height * 0.805 // 43, Game.screen_height // 43))
+
+        close_button = pygame.image.load("resources\\icons\\x.png").convert_alpha()
+        Game.close_button = pygame.transform.smoothscale(close_button, (Game.height // 24, Game.height // 24))
+        Game.close_button_rect = Game.close_button.get_rect()
+        Game.close_button_rect.topleft = (Game.height//0.6, Game.height // 25)
+
+        settings_button = pygame.image.load("resources\\icons\\setting.png").convert_alpha()
+        Game.settings_button = pygame.transform.smoothscale(settings_button, (Game.height // 24, Game.height // 24))
+        Game.settings_button_rect = Game.settings_button.get_rect()
+        Game.settings_button_rect.topleft = (Game.height//0.62, Game.height // 25)
+
+        minimize_button = pygame.image.load("resources\\icons\\minimize.png").convert_alpha()
+        Game.minimize_button = pygame.transform.smoothscale(minimize_button, (Game.height // 24, Game.height // 24))
+        Game.minimize_button_rect = Game.minimize_button.get_rect()
+        Game.minimize_button_rect.topleft = (Game.height//0.64, Game.height // 25)
+
+        music_button = pygame.image.load("resources\\icons\\music.png").convert_alpha()
+        Game.music_button = pygame.transform.smoothscale(music_button, (Game.height // 24, Game.height // 24))
+        Game.music_button_rect = Game.music_button.get_rect()
+        Game.music_button_rect.topleft = (Game.height//0.66, Game.height // 25)
 
     def create_center_points(self):
         Game.center_points.clear()  # clean previous points (wrongly sized probably)
@@ -71,19 +106,19 @@ class Sound:
 
     @staticmethod
     def play():
-        wf = wave.open(Sound.file, 'rb')  # Abrir archivo de audio
-        p = pyaudio.PyAudio()  # Inicializar PyAudio
-        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),  # Abrir el stream de audio
+        wf = wave.open(Sound.file, 'rb')  # open audio file
+        p = pyaudio.PyAudio()  # inicialize pyaudio
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),  # open audio stream
                         channels=wf.getnchannels(),
                         rate=wf.getframerate(),
                         output=True)
-        data = wf.readframes(1024)  # Leer y reproducir los datos de audio
+        data = wf.readframes(1024)  # read and play audio data
         while data:
             stream.write(data)
             data = wf.readframes(1024)
-        stream.stop_stream()  # Detener el stream
+        stream.stop_stream()  # stop the stream
         stream.close()
-        p.terminate()  # Terminar PyAudio
+        p.terminate()  # finish pyaudio
 
     @staticmethod
     def play_on_thread(file):
@@ -103,10 +138,11 @@ class Piece:
     pieces_dimension = 0
 
     def __init__(self, x, y):  # init method for evety piece where it gets another ingame values assigned
-        self.pos_x = x
-        self.pos_y = y
-        self.grid_pos_x = 0
-        self.grid_pos_y = 0
+        self.grid_pos_x = x
+        self.grid_pos_y = y
+        self.pos_x = 0
+        self.pos_y = 0
+        Piece.grid_pos_to_pixels(self, x, y, bypass_mana=True, change_mana=False)
 
         self.hp = Piece.init_hp
         self.mana = Piece.init_mana
@@ -149,7 +185,7 @@ class Piece:
         point_x, point_y = Game.center_points[Piece.grid_to_b64index(grid_x, grid_y)]
 
         movement_amount = Piece.get_amount_of_grid_move(grid_x, grid_y,  self.grid_pos_x,  self.grid_pos_y)
-        if (self.mana >= movement_amount or bypass_mana):  # only if the piece has enough mana can actually move
+        if (bypass_mana or self.mana >= movement_amount):  # only if the piece has enough mana can actually move
             if change_mana:  # this has to be above the next if conditional becuase there it updates the value of self.grid_pos_x
                 if self.mana > 0:
                     self.mana -= movement_amount  # gets the mana variation which is the same as the squared moved

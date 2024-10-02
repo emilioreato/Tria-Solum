@@ -26,16 +26,19 @@ pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
 game.set_up_window()
 clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
+game.load_resources()
+game.create_center_points()
+
 
 # GENERAL VARIABLES
 
 active_pieces = [
-    clases.Mage(500, 500, 13, "blue"),
-    clases.Mage(700, 700, 13, "red"),
-    clases.Archer(1000, 600, 13, "red"),
-    clases.Archer(900, 700, 13, "blue"),
-    clases.Knight(1000, 900, 13, "red"),
-    clases.Knight(900, 1100, 13, "blue")
+    clases.Mage(5, 5, 11, "blue"),
+    clases.Mage(4, 4, 11, "red"),
+    clases.Archer(6, 6, 11, "red"),
+    clases.Archer(7, 7, 11, "blue"),
+    clases.Knight(1, 1, 11, "red"),
+    clases.Knight(2, 6, 5, "blue")
 ]
 selected_piece = None
 
@@ -44,13 +47,14 @@ minimized_state = False
 show_cursor_image = True
 
 selected_background = 0  # backgrounds related variables
-BACKGROUNDS_AMOUNT = 7
 
 music_pause_state = False  # song related variables
 generated_values = []
 draw_music_slider = False
 generation_count = 0
 
+
+# USEFUL FUNCTIONS
 
 def colindepoint_with_sound(rect, point_pos):  # a modified version of collidepoint() so it plays the click sfx sound when its true. used for buttons
 
@@ -60,46 +64,6 @@ def colindepoint_with_sound(rect, point_pos):  # a modified version of collidepo
         sfx_player.play_on_thread(game.SFX[1])
         return True
     return False
-
-
-def load_resources():
-
-    global backgrounds, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
-
-    backgrounds = []
-    for i in range(0, BACKGROUNDS_AMOUNT):
-        bkg_img = pygame.image.load(f"resources\\images\\background{i}.png").convert()  # load some images, converts it for optimization and then scales them.
-        bkg_img = pygame.transform.smoothscale(bkg_img, (game.width, game.height))
-        backgrounds.append(bkg_img)
-
-    cursor_default = pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha()
-    cursor_default = pygame.transform.smoothscale(cursor_default, (game.screen_height * 0.805 // 43, game.screen_height // 43))
-
-    close_button = pygame.image.load("resources\\icons\\x.png").convert_alpha()
-    close_button = pygame.transform.smoothscale(close_button, (game.height // 24, game.height // 24))
-    close_button_rect = close_button.get_rect()
-    close_button_rect.topleft = (game.height//0.6, game.height // 25)
-
-    settings_button = pygame.image.load("resources\\icons\\setting.png").convert_alpha()
-    settings_button = pygame.transform.smoothscale(settings_button, (game.height // 24, game.height // 24))
-    settings_button_rect = settings_button.get_rect()
-    settings_button_rect.topleft = (game.height//0.62, game.height // 25)
-
-    minimize_button = pygame.image.load("resources\\icons\\minimize.png").convert_alpha()
-    minimize_button = pygame.transform.smoothscale(minimize_button, (game.height // 24, game.height // 24))
-    minimize_button_rect = minimize_button.get_rect()
-    minimize_button_rect.topleft = (game.height//0.64, game.height // 25)
-
-    music_button = pygame.image.load("resources\\icons\\music.png").convert_alpha()
-    music_button = pygame.transform.smoothscale(music_button, (game.height // 24, game.height // 24))
-    music_button_rect = music_button.get_rect()
-    music_button_rect.topleft = (game.height//0.66, game.height // 25)
-
-
-load_resources()
-
-
-game.create_center_points()
 
 
 def set_mouse_usage(visible=False, grab=True):
@@ -119,15 +83,15 @@ manager = pygame_gui.UIManager((game.width, game.height))
 
 
 def draw():
-    game.screen.blit(backgrounds[selected_background], (0, 0))  # displaying background
+    game.screen.blit(game.backgrounds[selected_background], (0, 0))  # displaying background
 
     for piece in active_pieces:    # displaying all pieces
         piece.draw(game.screen, piece.image)
 
-    game.screen.blit(close_button, (game.height//0.6, game.height // 25))  # displaying buttons
-    game.screen.blit(settings_button, (game.height//0.62, game.height // 25))
-    game.screen.blit(minimize_button, (game.height//0.64, game.height // 25))
-    game.screen.blit(music_button, (game.height//0.66, game.height // 25))
+    game.screen.blit(game.close_button, (game.height//0.6, game.height // 25))  # displaying buttons
+    game.screen.blit(game.settings_button, (game.height//0.62, game.height // 25))
+    game.screen.blit(game.minimize_button, (game.height//0.64, game.height // 25))
+    game.screen.blit(game.music_button, (game.height//0.66, game.height // 25))
 
     if draw_music_slider:  # displaying music slider
         pass
@@ -136,7 +100,7 @@ def draw():
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
     if show_cursor_image:  # displaying cursor
-        game.screen.blit(cursor_default, pygame.mouse.get_pos())
+        game.screen.blit(game.cursor_default, pygame.mouse.get_pos())
 
     pygame.display.flip()  # update the screen. /    .update() also works
 
@@ -210,16 +174,16 @@ while run:  # Main loop
                         follow_mouse = True
                         selected_piece = active_pieces.index(piece)
 
-                if colindepoint_with_sound(close_button_rect, mouse_pos):  # check if button was clicked
+                if colindepoint_with_sound(game.close_button_rect, mouse_pos):  # check if button was clicked
                     pygame.quit()
                     sys.exit()
-                elif colindepoint_with_sound(minimize_button_rect, mouse_pos):  # check if button was clicked
+                elif colindepoint_with_sound(game.minimize_button_rect, mouse_pos):  # check if button was clicked
                     minimized_state = not minimized_state
                     if minimized_state:
                         game.set_up_window(1.4)
                         clases.Piece.set_dimension()
                         game.create_center_points()
-                        load_resources()
+                        game.load_resources()
                         window = pyautogui.getWindowsWithTitle("Gambit Game")[0]
                         window.moveTo(100, 100)
 
@@ -230,14 +194,14 @@ while run:  # Main loop
                         game.set_up_window(1, pygame.NOFRAME)
                         clases.Piece.set_dimension()
                         game.create_center_points()
-                        load_resources()
+                        game.load_resources()
 
                         piece.resize(active_pieces)
                         set_mouse_usage(False, True)
                         break
-                elif colindepoint_with_sound(music_button_rect, mouse_pos):  # check if button was clicked
+                elif colindepoint_with_sound(game.music_button_rect, mouse_pos):  # check if button was clicked
                     draw_music_slider = True
-                elif colindepoint_with_sound(settings_button_rect, mouse_pos):  # check if button was clicked
+                elif colindepoint_with_sound(game.settings_button_rect, mouse_pos):  # check if button was clicked
                     pass
 
         if event.type == pygame.MOUSEBUTTONUP:
@@ -254,10 +218,10 @@ while run:  # Main loop
                     which_point = active_pieces[selected_piece].detect_closest_point(event.pos)
                     # active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
                     gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
-                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
+                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
 
             elif event.button == 3:
-                if music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
+                if game.music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
                     music_pause_state = not music_pause_state
                     if music_pause_state:
                         pygame.mixer.music.pause()
@@ -265,7 +229,7 @@ while run:  # Main loop
                         pygame.mixer.music.unpause()
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
-            if (pygame.key.name(event.key) == "t" and selected_background < BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
+            if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
                 selected_background += 1
             elif (pygame.key.name(event.key) == "g" and selected_background > 0):
                 selected_background -= 1
@@ -285,11 +249,13 @@ while run:  # Main loop
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "escape"):
+                stopmusic()
                 pygame.quit()
                 sys.exit()
 
             # print(active_pieces[selected_piece].mana)
         elif event.type == pygame.QUIT:
+            stopmusic()
             pygame.quit()
             sys.exit()
 
