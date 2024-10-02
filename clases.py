@@ -27,19 +27,14 @@ class Game:
 
     BACKGROUNDS_AMOUNT = 7
 
-    PLAYLIST = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ingame" on their name, aka, soundtrack files for the matches
-                for archivo in os.listdir("resources\\sounds\\soundtracks")
-                if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
-
-    SFX = [os.path.join("resources\\sounds\\sfx", archivo)  # This list contains all the paths of the sfx files
-           for archivo in os.listdir("resources\\sounds\\sfx")]
+    rects_list = []
 
     def __init__(self):  # init method for evety piece where it gets another ingame values assigned
         pass
 
     def load_resources(self):
 
-        # global backgrounds, music_button_rect, music_button, cursor_default, close_button, close_button_rect, settings_button, settings_button_rect, minimize_button, minimize_button_rect
+        # global backgrounds, music_btn_rect, music_btn, cursor_default, close_btn, close_btn_rect, settings_btn, settings_btn_rect, minimize_btn, minimize_btn_rect
 
         Game.backgrounds = []
         for i in range(0, Game.BACKGROUNDS_AMOUNT):
@@ -49,26 +44,45 @@ class Game:
 
         cursor_default = pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha()
         Game.cursor_default = pygame.transform.smoothscale(cursor_default, (Game.screen_height * 0.805 // 43, Game.screen_height // 43))
+        cursor_hand = pygame.image.load("resources\\icons\\cursor_hand.png").convert_alpha()
+        Game.cursor_hand = pygame.transform.smoothscale(cursor_hand, (Game.screen_height * 0.805 // 43, Game.screen_height // 43))
 
-        close_button = pygame.image.load("resources\\icons\\x.png").convert_alpha()
-        Game.close_button = pygame.transform.smoothscale(close_button, (Game.height // 24, Game.height // 24))
-        Game.close_button_rect = Game.close_button.get_rect()
-        Game.close_button_rect.topleft = (Game.height//0.6, Game.height // 25)
+        Game.x_btn_metrics = {"x": Game.height//0.58, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
+        x_btn = pygame.image.load("resources\\icons\\x.png").convert_alpha()
+        Game.x_btn = pygame.transform.smoothscale(x_btn, (Game.x_btn_metrics["w"], Game.x_btn_metrics["h"]))
+        Game.x_btn_rect = Game.x_btn.get_rect()
+        Game.x_btn_rect.topleft = (Game.x_btn_metrics["x"], Game.x_btn_metrics["y"])
 
-        settings_button = pygame.image.load("resources\\icons\\setting.png").convert_alpha()
-        Game.settings_button = pygame.transform.smoothscale(settings_button, (Game.height // 24, Game.height // 24))
-        Game.settings_button_rect = Game.settings_button.get_rect()
-        Game.settings_button_rect.topleft = (Game.height//0.62, Game.height // 25)
+        Game.shrink_btn_metrics = {"x": Game.height//0.6, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
+        shrink_btn = pygame.image.load("resources\\icons\\shrink.png").convert_alpha()
+        Game.shrink_btn = pygame.transform.smoothscale(shrink_btn, (Game.shrink_btn_metrics["w"], Game.shrink_btn_metrics["h"]))
+        Game.shrink_btn_rect = Game.shrink_btn.get_rect()
+        Game.shrink_btn_rect.topleft = (Game.shrink_btn_metrics["x"], Game.shrink_btn_metrics["y"])
 
-        minimize_button = pygame.image.load("resources\\icons\\minimize.png").convert_alpha()
-        Game.minimize_button = pygame.transform.smoothscale(minimize_button, (Game.height // 24, Game.height // 24))
-        Game.minimize_button_rect = Game.minimize_button.get_rect()
-        Game.minimize_button_rect.topleft = (Game.height//0.64, Game.height // 25)
+        Game.minimize_btn_metrics = {"x": Game.height//0.62, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
+        minimize_btn = pygame.image.load("resources\\icons\\minimize.png").convert_alpha()
+        Game.minimize_btn = pygame.transform.smoothscale(minimize_btn, (Game.minimize_btn_metrics["w"], Game.minimize_btn_metrics["h"]))
+        Game.minimize_btn_rect = Game.minimize_btn.get_rect()
+        Game.minimize_btn_rect.topleft = (Game.minimize_btn_metrics["x"], Game.minimize_btn_metrics["y"])
 
-        music_button = pygame.image.load("resources\\icons\\music.png").convert_alpha()
-        Game.music_button = pygame.transform.smoothscale(music_button, (Game.height // 24, Game.height // 24))
-        Game.music_button_rect = Game.music_button.get_rect()
-        Game.music_button_rect.topleft = (Game.height//0.66, Game.height // 25)
+        Game.settings_btn_metrics = {"x": Game.height//0.655, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
+        settings_btn = pygame.image.load("resources\\icons\\setting.png").convert_alpha()
+        Game.settings_btn = pygame.transform.smoothscale(settings_btn, (Game.settings_btn_metrics["w"], Game.settings_btn_metrics["h"]))
+        Game.settings_btn_rect = Game.settings_btn.get_rect()
+        Game.settings_btn_rect.topleft = (Game.settings_btn_metrics["x"], Game.settings_btn_metrics["y"])
+
+        Game.music_btn_metrics = {"x": Game.height/0.78, "y": Game.height // 8, "w": Game.height // 28, "h": Game.height // 28}  # x coordinate, y coordinate, width measure, height measure
+        music_btn = pygame.image.load("resources\\icons\\music.png").convert_alpha()
+        Game.music_btn = pygame.transform.smoothscale(music_btn, (Game.music_btn_metrics["w"], Game.music_btn_metrics["h"]))
+        Game.music_btn_rect = Game.music_btn.get_rect()
+        Game.music_btn_rect.topleft = (Game.music_btn_metrics["x"], Game.music_btn_metrics["y"])
+
+        Game.rects_list = (Game.x_btn_rect,
+                           Game.music_btn_rect,
+                           Game.shrink_btn_rect,
+                           Game.minimize_btn_rect,
+                           Game.settings_btn_rect
+                           )
 
     def create_center_points(self):
         Game.center_points.clear()  # clean previous points (wrongly sized probably)
@@ -96,10 +110,20 @@ class Game:
         Game.timer = pygame.time.Clock()  # create a clock object to set fps
         Game.dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
 
+    def convert_img(image, mode="default"):  # a function used to convert the images to the pygame format. you can choose between normal or alpha mode
+        if mode == "alpha":
+            return image.convert_alpha()
+        return image.convert()
+
 
 class Sound:
 
-    file = None
+    SFX = [os.path.join("resources\\sounds\\sfx", archivo)  # This list contains all the paths of the sfx files
+           for archivo in os.listdir("resources\\sounds\\sfx")]
+
+    PLAYLIST = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ingame" on their name, aka, soundtrack files for the matches
+                for archivo in os.listdir("resources\\sounds\\soundtracks")
+                if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
 
     def __init__(self):
         pass
@@ -121,8 +145,7 @@ class Sound:
         p.terminate()  # finish pyaudio
 
     @staticmethod
-    def play_on_thread(file):
-        # Ejecutar la reproducción del sonido en un hilo para no bloquear el programa
+    def play_on_thread(file):  # execute the playing of the sound in a thread so the main program doesnt get blocked
         Sound.file = file
         threading.Thread(target=Sound.play).start()
 
@@ -265,14 +288,11 @@ class Piece:
             piece.image = Piece.smoothscale_images(piece.original_image)
 
     def smoothscale_images(image_to_scale):
-        print(image_to_scale)
+        # print(image_to_scale)
         return pygame.transform.smoothscale(image_to_scale, (Piece.pieces_dimension, Piece.pieces_dimension))
 
 
 class Mage(Piece):
-
-    red_mage_image = pygame.image.load("resources\\images\\red_mage.png")  # .convert()
-    blue_mage_image = pygame.image.load("resources\\images\\blue_mage.png")  # .convert()
 
     def __init__(self, x, y, mana, team):
         super().__init__(x, y)
@@ -290,14 +310,11 @@ class Mage(Piece):
             self.image = Piece.smoothscale_images(self.original_image)
 
     def loadimages():
-        Mage.red_mage_image = pygame.image.load("resources\\images\\red_mage.png")  # .convert()
-        Mage.blue_mage_image = pygame.image.load("resources\\images\\blue_mage.png")  # .convert()
+        Mage.red_mage_image = Game.convert_img(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
+        Mage.blue_mage_image = Game.convert_img(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
 
 
 class Archer(Piece):
-
-    red_archer_image = pygame.image.load("resources\\images\\red_archer.png")  # .convert()
-    blue_archer_image = pygame.image.load("resources\\images\\blue_archer.png")  # .convert()
 
     def __init__(self, x, y, mana, team):
         super().__init__(x, y)
@@ -315,14 +332,11 @@ class Archer(Piece):
             self.image = Piece.smoothscale_images(self.original_image)
 
     def loadimages():
-        Archer.red_archer_image = pygame.image.load("resources\\images\\red_archer.png")  # .convert()
-        Archer.blue_archer_image = pygame.image.load("resources\\images\\blue_archer.png")  # .convert()
+        Archer.red_archer_image = Game.convert_img(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
+        Archer.blue_archer_image = Game.convert_img(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
 
 
 class Knight(Piece):
-
-    red_knight_image = pygame.image.load("resources\\images\\red_knight.png")  # .convert()
-    blue_knight_image = pygame.image.load("resources\\images\\blue_knight.png")  # .convert()
 
     def __init__(self, x, y, mana, team):
         super().__init__(x, y)
@@ -340,5 +354,120 @@ class Knight(Piece):
             self.image = Piece.smoothscale_images(self.original_image)
 
     def loadimages():
-        Knight.red_knight_image = pygame.image.load("resources\\images\\red_knight.png")  # .convert()
-        Knight.blue_knight_image = pygame.image.load("resources\\images\\blue_knight.png")  # .convert()
+        Knight.red_knight_image = Game.convert_img(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
+        Knight.blue_knight_image = Game.convert_img(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
+
+
+class UI:
+    # @staticmethod
+    def init():
+        UI.font = pygame.font.Font(None, 30)
+        UI.sfont = pygame.font.Font(None, 20)
+        UI.lfont = pygame.font.Font(None, 40)
+        UI.xlfont = pygame.font.Font(None, 50)
+        UI.center = (Game.screen.get_size()[0]//2, Game.screen.get_size()[1]//2)
+        UI.config_menu_pos = (round(Game.screen.get_size()[0]/1.21), round(Game.screen.get_size()[1]/7.7))
+        UI.half_width = Game.screen.get_size()[0]//2
+        UI.half_height = Game.screen.get_size()[1]//2
+
+        UI.fonts = {
+            'sm': UI.sfont,
+            'm': UI.font,
+            'l': UI.lfont,
+            'xl': UI.xlfont
+        }
+
+
+class Menu:
+
+    def __init__(self):
+
+        config_menu_alpha_image = Game.convert_img(pygame.image.load("resources\\images\\menu\\config_menu.png"), "alpha")
+        Menu.config_menu_alpha_image = pygame.transform.smoothscale(config_menu_alpha_image, (Game.height / 2, Game.height / 2))
+
+        self.sliders = [
+            Slider(UI.config_menu_pos, (250, 20), 0.4, 0, 1)  # ,
+            # Slider((UI.center[0], UI.center[1]+75), (300, 40), 0.5, 50, 100),
+            # Slider((UI.center[0], UI.center[1]+150), (1000, 20), 0.5, 300, 100)
+        ]
+
+    def run(self, show_music):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse = pygame.mouse.get_pressed()
+
+        Game.screen.blit(Menu.config_menu_alpha_image, (Game.height/0.8, Game.height / 10))  # displaying its background
+
+        if show_music:
+            Game.screen.blit(Game.music_btn, (Game.music_btn_metrics["x"], Game.music_btn_metrics["y"]))
+            for slider in self.sliders:
+                if slider.container_rect.collidepoint(mouse_pos):
+                    if mouse[0]:
+                        slider.grabbed = True
+                if not mouse[0]:
+                    slider.grabbed = False
+                if slider.btn_rect.collidepoint(mouse_pos):
+                    slider.hover()
+                if slider.grabbed:
+                    slider.move_slider(mouse_pos)
+                    slider.hover()
+                else:
+                    slider.hovered = False
+
+                slider.render()
+                # slider.display_value(self.app)
+
+
+class Slider:
+
+    UNSELECTED = "darkgray"
+    SELECTED = "white"
+    btnSTATES = {
+        True: SELECTED,
+        False: UNSELECTED
+    }
+
+    def __init__(self, pos: tuple, size: tuple, initial_val: float, min: int, max: int):
+        self.pos = pos
+        self.size = size
+        self.hovered = False
+        self.grabbed = False
+
+        self.slider_left_pos = self.pos[0] - (size[0]//2)
+        self.slider_right_pos = self.pos[0] + (size[0]//2)
+        self.slider_top_pos = self.pos[1] - (size[1]//2)
+
+        self.min = min
+        self.max = max
+        self.initial_val = (self.slider_right_pos-self.slider_left_pos)*initial_val  # <- percentage
+
+        self.container_rect = pygame.Rect(self.slider_left_pos, self.slider_top_pos, self.size[0], self.size[1])
+        self.btn_rect = pygame.Rect(self.slider_left_pos + self.initial_val - 5, self.slider_top_pos, 10, self.size[1])
+
+        # label
+        self.text = UI.fonts['m'].render(str(int(self.get_value())), True, "white", None)
+        self.label_rect = self.text.get_rect(center=(self.pos[0], self.slider_top_pos - 15))
+
+    def move_slider(self, mouse_pos):
+        pos = mouse_pos[0]
+        if pos < self.slider_left_pos:
+            pos = self.slider_left_pos
+        if pos > self.slider_right_pos:
+            pos = self.slider_right_pos
+        self.btn_rect.centerx = pos
+
+    def hover(self):
+        self.hovered = True
+
+    def render(self):
+        pygame.draw.rect(Game.screen, "black", self.container_rect)
+        pygame.draw.rect(Game.screen, Slider.btnSTATES[self.hovered], self.btn_rect)
+
+    def get_value(self):
+        val_range = self.slider_right_pos - self.slider_left_pos - 1
+        btn_val = self.btn_rect.centerx - self.slider_left_pos
+
+        return (btn_val/val_range)*(self.max-self.min)+self.min
+
+    def display_value(self):
+        self.text = UI.fonts['m'].render(str(int(self.get_value())), True, "white", None)
+        Game.screen.blit(self.text, self.label_rect)

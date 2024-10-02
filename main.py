@@ -1,5 +1,3 @@
-import win32con
-import win32gui
 import pygame
 import time
 import numpy
@@ -16,12 +14,13 @@ import random
 # SETING THINGS UP
 
 game = clases.Game()
-sfx_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
+sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
 
 pygame.init()  # Inicializar Pygame
 pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
+pygame.mixer.music.set_volume(0.4)
 
 game.set_up_window()
 clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
@@ -33,35 +32,41 @@ game.create_center_points()
 # GENERAL VARIABLES
 
 active_pieces = [
-    clases.Mage(5, 5, 11, "blue"),
-    clases.Mage(4, 4, 11, "red"),
-    clases.Archer(6, 6, 11, "red"),
-    clases.Archer(7, 7, 11, "blue"),
-    clases.Knight(1, 1, 11, "red"),
-    clases.Knight(2, 6, 5, "blue")
+    clases.Mage(5, 5, 30, "blue"),
+    clases.Mage(4, 4, 30, "red"),
+    clases.Archer(6, 6, 30, "red"),
+    clases.Archer(7, 7, 30, "blue"),
+    clases.Knight(1, 1, 30, "red"),
+    clases.Knight(2, 6, 30, "blue")
 ]
 selected_piece = None
 
+show_config_menu = False
+
 follow_mouse = False
-minimized_state = False
+shrink_state = False
 show_cursor_image = True
+cursor = game.cursor_default
 
 selected_background = 0  # backgrounds related variables
 
 music_pause_state = False  # song related variables
 generated_values = []
-draw_music_slider = False
 generation_count = 0
+
+
+clases.UI.init()
+config_menu = clases.Menu()
 
 
 # USEFUL FUNCTIONS
 
-def colindepoint_with_sound(rect, point_pos):  # a modified version of collidepoint() so it plays the click sfx sound when its true. used for buttons
+def collidepoint_with_sound(rect, point_pos):  # a modified version of collidepoint() so it plays the click sfx sound when its true. used for btns
 
     collided = rect.collidepoint(point_pos)
 
     if collided:
-        sfx_player.play_on_thread(game.SFX[1])
+        sound_player.play_on_thread(sound_player.SFX[1])
         return True
     return False
 
@@ -88,33 +93,33 @@ def draw():
     for piece in active_pieces:    # displaying all pieces
         piece.draw(game.screen, piece.image)
 
-    game.screen.blit(game.close_button, (game.height//0.6, game.height // 25))  # displaying buttons
-    game.screen.blit(game.settings_button, (game.height//0.62, game.height // 25))
-    game.screen.blit(game.minimize_button, (game.height//0.64, game.height // 25))
-    game.screen.blit(game.music_button, (game.height//0.66, game.height // 25))
-
-    if draw_music_slider:  # displaying music slider
-        pass
+    game.screen.blit(game.x_btn, (game.x_btn_metrics["x"], game.x_btn_metrics["y"]))  # displaying btns
+    game.screen.blit(game.shrink_btn, (game.shrink_btn_metrics["x"], game.shrink_btn_metrics["y"]))
+    game.screen.blit(game.minimize_btn, (game.minimize_btn_metrics["x"], game.minimize_btn_metrics["y"]))
+    game.screen.blit(game.settings_btn, (game.settings_btn_metrics["x"], game.settings_btn_metrics["y"]))
 
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
+    if show_config_menu:
+        config_menu.run(show_music=show_config_menu)
+
     if show_cursor_image:  # displaying cursor
-        game.screen.blit(game.cursor_default, pygame.mouse.get_pos())
+        game.screen.blit(cursor, pygame.mouse.get_pos())
 
     pygame.display.flip()  # update the screen. /    .update() also works
 
 
-def play_song(playlist=game.PLAYLIST):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
+def play_song(playlist=sound_player.PLAYLIST):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
 
     def generate():
         while True:
 
             global generation_count, generated_values
 
-            iterations_without_repeating = 2
+            iterations_without_repeating = 6
 
-            generation_count += 1  # Aumenta el contador de generaciones
+            generation_count += 1  # increase the generations count
 
             if generation_count > iterations_without_repeating:  # Si hemos alcanzado el número de generaciones, reinicia la lista
                 generated_values = []
@@ -123,12 +128,12 @@ def play_song(playlist=game.PLAYLIST):  # a function that plays a random song fr
             if len(generated_values) == len(playlist):  # Si la lista de valores generados es igual a la lista de elementos, reiniciamos también la lista de elementos disponibles
                 generated_values = []
 
-            item = random.choice(playlist)  # Selecciona un elemento aleatorio que no haya sido generado
+            item = random.choice(playlist)  # selec a random song from playlist that has not been selected yet
             while item in generated_values:
                 item = random.choice(playlist)
 
             generated_values.append(item)
-            yield item  # Usamos yield para devolver el elemento
+            yield item  # yield to return the item
 
     track = next(generate())
 
@@ -137,22 +142,28 @@ def play_song(playlist=game.PLAYLIST):  # a function that plays a random song fr
 
     pygame.mixer.music.play()  # plays the track
 
-    pygame.mixer.music.set_volume(0.2)
-
 
 def stopmusic():
     pygame.mixer.quit()  # close the pygame mixer
 
 
-run = True
-iterations = 0
+# varibles needed to control fps
+start_time = time.time()  # Record the starting time
+loop_count = 0
+
+
+# this variables "ite" just count how many repetitions the loop has made and when some event should be analized
+ite0 = 0
+ite1 = 0
 init_time = time.time()
+run = True
 while run:  # Main loop
 
     # print(iterations)
 
     # checks if its due to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
-    if (iterations % 600 == 0 or (iterations == 0 and time.time()-init_time < 20)) and not music_pause_state:
+    if (ite0 >= 600 or (ite0 == 0 and time.time()-init_time < 20)) and not music_pause_state:
+        ite0 = 0
         if not pygame.mixer.music.get_busy():
             play_song()
 
@@ -164,28 +175,27 @@ while run:  # Main loop
     # Manejar eventos
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-
-                mouse_pos = event.pos  # get the current mouse position
+            if event.button == 1:  # then event.pos is used and it only tells the position of the mouse when the event occured
 
                 for piece in active_pieces:  # Checks if any piece was clicked
-                    if piece.is_clicked(mouse_pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
+                    if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
                         print("pieza clickeada")
                         follow_mouse = True
                         selected_piece = active_pieces.index(piece)
 
-                if colindepoint_with_sound(game.close_button_rect, mouse_pos):  # check if button was clicked
+                if collidepoint_with_sound(game.x_btn_rect, event.pos):  # check if btn was clicked
+                    time.sleep(0.4)
                     pygame.quit()
                     sys.exit()
-                elif colindepoint_with_sound(game.minimize_button_rect, mouse_pos):  # check if button was clicked
-                    minimized_state = not minimized_state
-                    if minimized_state:
+                elif collidepoint_with_sound(game.shrink_btn_rect, event.pos):  # check if btn was clicked
+                    shrink_state = not shrink_state  # pulsator to conmutator logic
+                    if shrink_state:
                         game.set_up_window(1.4)
                         clases.Piece.set_dimension()
                         game.create_center_points()
                         game.load_resources()
-                        window = pyautogui.getWindowsWithTitle("Gambit Game")[0]
-                        window.moveTo(100, 100)
+                        window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
+                        window.moveTo(180, 100)  # move the window
 
                         piece.resize(active_pieces)
                         set_mouse_usage(True, False)
@@ -199,34 +209,33 @@ while run:  # Main loop
                         piece.resize(active_pieces)
                         set_mouse_usage(False, True)
                         break
-                elif colindepoint_with_sound(game.music_button_rect, mouse_pos):  # check if button was clicked
-                    draw_music_slider = True
-                elif colindepoint_with_sound(game.settings_button_rect, mouse_pos):  # check if button was clicked
-                    pass
-
-        if event.type == pygame.MOUSEBUTTONUP:
-
-            mouse_pos = event.pos  # get the current mouse position
-
-            if event.button == 1:
-
-                if follow_mouse:
-
-                    sfx_player.play_on_thread(game.SFX[5])
-
-                    follow_mouse = False
-                    which_point = active_pieces[selected_piece].detect_closest_point(event.pos)
-                    # active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
-                    gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
-                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
+                elif collidepoint_with_sound(game.minimize_btn_rect, event.pos):  # check if btn was clicked
+                    window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
+                    window.minimize()  # minimize the window
+                elif collidepoint_with_sound(game.settings_btn_rect, event.pos):  # check if btn was clicked
+                    show_config_menu = not show_config_menu
 
             elif event.button == 3:
-                if game.music_button_rect.collidepoint(mouse_pos):  # check if button was clicked
+                if game.music_btn_rect.collidepoint(event.pos):  # check if btn was clicked
                     music_pause_state = not music_pause_state
                     if music_pause_state:
                         pygame.mixer.music.pause()
                     else:
                         pygame.mixer.music.unpause()
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+
+            if event.button == 1:
+
+                if follow_mouse:
+
+                    sound_player.play_on_thread(sound_player.SFX[5])
+
+                    follow_mouse = False
+                    which_point = active_pieces[selected_piece].detect_closest_point(event.pos)  # event pos is the mouse position at the moment of the event
+                    # active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
+                    gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
+                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
             if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
@@ -235,32 +244,53 @@ while run:  # Main loop
                 selected_background -= 1
 
             elif (pygame.key.name(event.key) == "w"):
-                active_pieces[selected_piece].move(-2, 0, True)
+                active_pieces[selected_piece].move(-1, 0, True)
                 # active_pieces[selected_piece].place(0, 7, True)
             elif (pygame.key.name(event.key) == "s"):
-                active_pieces[selected_piece].move(2, 0, True)
+                active_pieces[selected_piece].move(1, 0, True)
                 # active_pieces[selected_piece].place(0, 0, True)
             elif (pygame.key.name(event.key) == "a"):
-                active_pieces[selected_piece].move(0, 2, True)
+                active_pieces[selected_piece].move(0, 1, True)
                 # active_pieces[selected_piece].place(7, 0, True)
             elif (pygame.key.name(event.key) == "d"):
-                active_pieces[selected_piece].move(0, -2, True)
+                active_pieces[selected_piece].move(0, -1, True)
                 # active_pieces[selected_piece].place(7, 7, True)
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "escape"):
+                time.sleep(0.4)
                 stopmusic()
                 pygame.quit()
                 sys.exit()
 
-            # print(active_pieces[selected_piece].mana)
+        elif (ite1 >= 15):
+            ite1 = 0
+            if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
+                cursor = game.cursor_default
+                for rect in game.rects_list:
+                    if rect.collidepoint(event.pos):  # check if every btn was hovered
+                        cursor = game.cursor_hand
+                        break
+                if config_menu.sliders[0].container_rect.collidepoint(event.pos):  # checks if the mouse is over the slider and then sets the volume to the varible of that class
+                    pygame.mixer.music.set_volume(config_menu.sliders[0].get_value())
+                    # print(config_menu.sliders[0].get_value())
+
         elif event.type == pygame.QUIT:
+            time.sleep(0.4)
             stopmusic()
             pygame.quit()
             sys.exit()
 
     draw()
 
-    game.timer.tick(game.dev_mode.DisplayFrequency)  # set the fps to the maximun possible
+    ite0 += 1  # iterator used to control events
+    ite1 += 1
 
-    iterations += 1  # iterator used to control events
+    # FPS CONTER
+    loop_count += 1  # Increment the counter on each loop
+    if time.time() - start_time >= 1:
+        print(loop_count)
+        loop_count = 0
+        start_time = time.time()
+
+    game.timer.tick(game.dev_mode.DisplayFrequency)  # set the fps to the maximun possible
