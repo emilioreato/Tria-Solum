@@ -50,7 +50,9 @@ cursor = game.cursor_default
 
 selected_background = 0  # backgrounds related variables
 
-music_pause_state = False  # song related variables
+music_pause_state = False  # audio related variables
+current_volume = 0.5
+
 generated_values = []
 generation_count = 0
 
@@ -155,26 +157,38 @@ loop_count = 0
 # this variables "ite" just count how many repetitions the loop has made and when some event should be analized
 ite0 = 0
 ite1 = 0
-init_time = time.time()
-run = True
-while run:  # Main loop
+ite2 = 0
 
-    # print(iterations)
+init_time = time.time()  # saves the time when the loop was entered
+while True:  # Main loop
 
     # checks if its due to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
-    if (ite0 >= 600 or (ite0 == 0 and time.time()-init_time < 20)) and not music_pause_state:
-        ite0 = 0
-        if not pygame.mixer.music.get_busy():
-            play_song()
+    if (ite0 >= 600 or (ite0 == 0 and time.time()-init_time < 20)):
+        if not music_pause_state:  # you also have to check if the music is not paused
+            ite0 = 0
+            if not pygame.mixer.music.get_busy():
+                play_song()
 
-    if follow_mouse and selected_piece != None:
-        active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = event.pos
-    else:
-        pass
+    if follow_mouse:  # when you are moving a piece you want it to follow your mouse, so you update the piece position to be exactly the same as your mouse's
+        if selected_piece != None:
+            active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = event.pos
 
-    # Manejar eventos
-    for event in pygame.event.get():
-        if event.type == pygame.MOUSEBUTTONDOWN:
+    for event in pygame.event.get():  # manage events
+
+        if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
+            if (ite1 >= 15):
+                ite1 = 0
+                cursor = game.cursor_default
+                for rect in game.rects_list:
+                    if rect.collidepoint(event.pos):  # check if every btn was hovered
+                        cursor = game.cursor_hand
+                        break
+
+            if (ite2 >= 8):
+                ite2 = 0
+                pygame.mixer.music.set_volume(config_menu.sliders[0].current_value)
+
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # then event.pos is used and it only tells the position of the mouse when the event occured
 
                 for piece in active_pieces:  # Checks if any piece was clicked
@@ -189,23 +203,22 @@ while run:  # Main loop
                     sys.exit()
                 elif collidepoint_with_sound(game.shrink_btn_rect, event.pos):  # check if btn was clicked
                     shrink_state = not shrink_state  # pulsator to conmutator logic
+                    window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so its position can be changed
+
                     if shrink_state:
+                        window.moveTo(180, 100)  # move the window
                         game.set_up_window(1.4)
                         clases.Piece.set_dimension()
                         game.create_center_points()
                         game.load_resources()
-                        window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
-                        window.moveTo(180, 100)  # move the window
-
                         piece.resize(active_pieces)
                         set_mouse_usage(True, False)
                     else:
-                        pygame.quit(), pygame.init()
                         game.set_up_window(1, pygame.NOFRAME)
                         clases.Piece.set_dimension()
+                        window.moveTo(0, 0)  # move the window
                         game.create_center_points()
                         game.load_resources()
-
                         piece.resize(active_pieces)
                         set_mouse_usage(False, True)
                         break
@@ -227,15 +240,18 @@ while run:  # Main loop
 
             if event.button == 1:
 
-                if follow_mouse:
+                if follow_mouse:  # if we were moving a piece
+                    follow_mouse = False
 
                     sound_player.play_on_thread(sound_player.SFX[5])
 
-                    follow_mouse = False
                     which_point = active_pieces[selected_piece].detect_closest_point(event.pos)  # event pos is the mouse position at the moment of the event
-                    # active_pieces[selected_piece].pos_x, active_pieces[selected_piece].pos_y = game.center_points[which_point]
                     gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
-                    active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
+                    if not piece.check_for_pieces_in_the_grid_coordinates(active_pieces, gx, gy):
+                        active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
+                    else:
+                        active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=True)
+                    print(active_pieces[selected_piece].mana)
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
             if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
@@ -263,18 +279,6 @@ while run:  # Main loop
                 pygame.quit()
                 sys.exit()
 
-        elif (ite1 >= 15):
-            ite1 = 0
-            if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
-                cursor = game.cursor_default
-                for rect in game.rects_list:
-                    if rect.collidepoint(event.pos):  # check if every btn was hovered
-                        cursor = game.cursor_hand
-                        break
-                if config_menu.sliders[0].container_rect.collidepoint(event.pos):  # checks if the mouse is over the slider and then sets the volume to the varible of that class
-                    pygame.mixer.music.set_volume(config_menu.sliders[0].get_value())
-                    # print(config_menu.sliders[0].get_value())
-
         elif event.type == pygame.QUIT:
             time.sleep(0.4)
             stopmusic()
@@ -285,6 +289,7 @@ while run:  # Main loop
 
     ite0 += 1  # iterator used to control events
     ite1 += 1
+    ite2 += 1
 
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop

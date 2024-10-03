@@ -192,9 +192,7 @@ class Piece:
     def grid_to_b64index(x, y):  # it returns the opposite conversion of b64index_to_grid. given 2d array coordinates it converts them to a 1d array coordinate
         return y*Game.board_size + x
 
-    def grid_pos_to_pixels(self, grid_x, grid_y, change_mana=False, bypass_mana=False, update_variables=True):  # this function
-
-        # print(self.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
+    def grid_pos_to_pixels(self, grid_x, grid_y, change_mana=False, bypass_mana=False, update_variables=True):  # this function changes the position of the pieces images based on the grid coordinates passed
 
         if (grid_x < 0):  # this checks for the new position to not surpase grid limits
             grid_x = 0
@@ -225,6 +223,12 @@ class Piece:
         else:
             self.pos_x, self.pos_y = Game.center_points[Piece.grid_to_b64index(self.grid_pos_x, self.grid_pos_y)]
             return None, None, None, None
+
+    def check_for_pieces_in_the_grid_coordinates(self, active_pieces, x, y):
+        for piece in active_pieces:
+            if (piece.grid_pos_x == x and piece.grid_pos_y == y):
+                return True
+        return False
 
     @staticmethod
     def detect_closest_point(mouse_pos):  # AKA transform pixels position to grid placement (opposite of grid_pos_to_pixels())
@@ -410,6 +414,9 @@ class Menu:
                 if slider.grabbed:
                     slider.move_slider(mouse_pos)
                     slider.hover()
+                    new_value = slider.get_value()
+                    if slider.current_value != new_value:
+                        slider.current_value = new_value
                 else:
                     slider.hovered = False
 
@@ -431,6 +438,8 @@ class Slider:
         self.size = size
         self.hovered = False
         self.grabbed = False
+
+        self.current_value = initial_val
 
         self.slider_left_pos = self.pos[0] - (size[0]//2)
         self.slider_right_pos = self.pos[0] + (size[0]//2)
@@ -454,6 +463,7 @@ class Slider:
         if pos > self.slider_right_pos:
             pos = self.slider_right_pos
         self.btn_rect.centerx = pos
+        print("moved")
 
     def hover(self):
         self.hovered = True
