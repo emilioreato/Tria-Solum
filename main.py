@@ -1,3 +1,4 @@
+import copy
 import pygame
 import time
 import numpy
@@ -52,10 +53,6 @@ selected_background = 0  # backgrounds related variables
 
 music_pause_state = False  # audio related variables
 current_volume = 0.5
-
-generated_values = []
-generation_count = 0
-
 
 clases.UI.init()
 config_menu = clases.Menu()
@@ -112,39 +109,6 @@ def draw():
     pygame.display.flip()  # update the screen. /    .update() also works
 
 
-def play_song(playlist=sound_player.PLAYLIST):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
-
-    def generate():
-        while True:
-
-            global generation_count, generated_values
-
-            iterations_without_repeating = 6
-
-            generation_count += 1  # increase the generations count
-
-            if generation_count > iterations_without_repeating:  # Si hemos alcanzado el número de generaciones, reinicia la lista
-                generated_values = []
-                generation_count = 1  # Reinicia el contador
-
-            if len(generated_values) == len(playlist):  # Si la lista de valores generados es igual a la lista de elementos, reiniciamos también la lista de elementos disponibles
-                generated_values = []
-
-            item = random.choice(playlist)  # selec a random song from playlist that has not been selected yet
-            while item in generated_values:
-                item = random.choice(playlist)
-
-            generated_values.append(item)
-            yield item  # yield to return the item
-
-    track = next(generate())
-
-    pygame.mixer.music.load(track)  # loads the track
-    print(f"Reproduciendo: {track}")
-
-    pygame.mixer.music.play()  # plays the track
-
-
 def stopmusic():
     pygame.mixer.quit()  # close the pygame mixer
 
@@ -167,7 +131,7 @@ while True:  # Main loop
         if not music_pause_state:  # you also have to check if the music is not paused
             ite0 = 0
             if not pygame.mixer.music.get_busy():
-                play_song()
+                clases.Sound.play_song(sound_player.PLAYLIST)
 
     if follow_mouse:  # when you are moving a piece you want it to follow your mouse, so you update the piece position to be exactly the same as your mouse's
         if selected_piece != None:
@@ -273,6 +237,8 @@ while True:  # Main loop
                 # active_pieces[selected_piece].place(7, 7, True)
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
+            elif (pygame.key.name(event.key) == "n"):
+                clases.Sound.play_song(sound_player.PLAYLIST)
             elif (pygame.key.name(event.key) == "escape"):
                 time.sleep(0.4)
                 stopmusic()
@@ -294,7 +260,7 @@ while True:  # Main loop
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop
     if time.time() - start_time >= 1:
-        print(loop_count)
+        # print(loop_count)
         loop_count = 0
         start_time = time.time()
 

@@ -6,8 +6,10 @@ import pyautogui
 import threading
 import wave
 import pyaudio
+import media
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
+import random
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
@@ -125,6 +127,8 @@ class Sound:
                 for archivo in os.listdir("resources\\sounds\\soundtracks")
                 if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
 
+    generated_tracks = []
+
     def __init__(self):
         pass
 
@@ -148,6 +152,25 @@ class Sound:
     def play_on_thread(file):  # execute the playing of the sound in a thread so the main program doesnt get blocked
         Sound.file = file
         threading.Thread(target=Sound.play).start()
+
+    @staticmethod
+    def play_song(playlist):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
+        # playlist = copy.deepcopy(t)
+
+        filtered_playlist = [song for song in playlist if song not in Sound.generated_tracks]  # selec a random song from playlist that has not been selected yet
+
+        track = random.choice(filtered_playlist)
+
+        if track in Sound.generated_tracks:
+            print("not working")
+
+        Sound.generated_tracks.append(track)
+
+        pygame.mixer.music.load(track)  # loads the track
+        pygame.mixer.music.play()  # plays the track
+
+        if len(Sound.generated_tracks) > (len(playlist)-5):
+            Sound.generated_tracks.pop(0)
 
 
 class Piece:
