@@ -1,0 +1,19 @@
+copy installed
+pygame installed
+time installed
+numpy installed
+pygame_gui installed
+os installed
+pyautogui installed
+ctypes installed
+math installed
+random installed
+threading installed
+wave installed
+pyaudio installed
+media installed
+pywin32 installed
+string installed
+socket installed
+requests installed
+firewall rules created

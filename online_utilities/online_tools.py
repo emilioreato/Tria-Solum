@@ -12,8 +12,8 @@ class Online:
     def get_local_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
-            s.connect(("8.8.8.8", 80))  # Usando el servidor DNS de Google
-            local_ip = s.getsockname()[0]  # Obtener la dirección IP local
+            s.connect(("8.8.8.8", 80))  # Using the Google DNS server
+            local_ip = s.getsockname()[0]  # Get the local IP address
         finally:
             s.close()  # Cerrar el socket
         return local_ip
@@ -53,7 +53,7 @@ class Server(Online):  # a class that contains all the functions and utilities t
 
         self.socket.listen(1)  # now we accept entring connections
 
-        print("waiting")
+        print("Waiting for the oppenent to join.")
 
         self.manager, _ = self.socket.accept()  # creating a client obj to recieve data
 
@@ -73,5 +73,3 @@ class Client(Online):
     def set_up_client(self, HOST_IP, PORT):  # port is tipically 8050. ip has to be the public ip from the user creating the match(working as server)
 
         self.socket.connect((HOST_IP, PORT))
-
-        # self.manager = self.socket  # this is made so that the client side can also use the send() and receive() function as they use self.manager to send and receive.

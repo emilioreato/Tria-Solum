@@ -57,15 +57,16 @@ class FirewallRules:
             print("Error adding the rule to the firewall:", e)
 
     def check_firewall_installation_status(path, port):  # THIS METHOD IS MADE FOR THIS SPECIFIC GAME. but its useful anyway
-        with open(path, 'r') as archivo:  # Small code that creates a firewall rule if it has not been created yet. the state of the creation is saved on rules.txt
-            if not "yes" in archivo.read():
-                print("creating")
+        with open(path, 'r') as file:  # Small code that creates a firewall rule if it has not been created yet. the state of the creation is saved on rules.txt
+            log_text = "firewall rules created"
+            if not log_text in file.read().lower():
+                print("Creating Firewall rules to allow comunication through port " + str(port) + "...")
                 FirewallRules.get_admin_permitions()
                 rule_name = "GambitGameRule"
                 if not FirewallRules.rule_exists(rule_name):
                     FirewallRules.add_firewall_rule(port, rule_name + "Inbound", "Inbound")
                     FirewallRules.add_firewall_rule(port, rule_name + "Outbound", "Outbound")
-                with open(path, 'w') as archivo:
-                    archivo.write('yes')
+                with open(path, 'a') as file:
+                    file.write(log_text+"\n")
             else:
                 print("already")

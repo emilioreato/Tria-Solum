@@ -6,7 +6,7 @@ import pyautogui
 import threading
 import wave
 import pyaudio
-import media
+from media import Media
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
 import random
@@ -134,31 +134,22 @@ class Sound:
         pass
 
     @staticmethod
-    def play():
-        wf = wave.open(Sound.file, 'rb')  # open audio file
-        p = pyaudio.PyAudio()  # inicialize pyaudio
-        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),  # open audio stream
-                        channels=wf.getnchannels(),
-                        rate=wf.getframerate(),
-                        output=True)
-        data = wf.readframes(1024)  # read and play audio data
-        while data:
-            stream.write(data)
-            data = wf.readframes(1024)
-        stream.stop_stream()  # stop the stream
-        stream.close()
-        p.terminate()  # finish pyaudio
+    def play_sfx(sfx):
+        sfx_channel = pygame.mixer.find_channel()  # Encuentra un canal disponible
+        if sfx_channel is None:
+            sfx_channel = pygame.mixer.Channel(pygame.mixer.get_num_channels())  # Si no hay canal disponible, crea uno nuevo
+        sound_effect = pygame.mixer.Sound(sfx)  # Cargar efecto de sonido
+        sfx_channel.play(sound_effect)  # Reproducir el efecto en el canal
 
     @staticmethod
-    def play_on_thread(file):  # execute the playing of the sound in a thread so the main program doesnt get blocked
+    def play_song_on_thread(file):  # execute the playing of the sound in a thread so the main program doesnt get blocked
         Sound.file = file
-        threading.Thread(target=Sound.play).start()
+        threading.Thread(target=Sound.play_song).start()
 
     @staticmethod
-    def play_song(playlist):  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
-        # playlist = copy.deepcopy(t)
+    def play_song():  # a function that plays a random song from the playlist with no repetitions for iterations_without_repeating calls
 
-        filtered_playlist = [song for song in playlist if song not in Sound.generated_tracks]  # selec a random song from playlist that has not been selected yet
+        filtered_playlist = [song for song in Sound.PLAYLIST if song not in Sound.generated_tracks]  # selec a random song from playlist that has not been selected yet
 
         track = random.choice(filtered_playlist)
 
@@ -170,7 +161,7 @@ class Sound:
         pygame.mixer.music.load(track)  # loads the track
         pygame.mixer.music.play()  # plays the track
 
-        if len(Sound.generated_tracks) > (len(playlist)-5):
+        if len(Sound.generated_tracks) > (len(Sound.PLAYLIST)-5):
             Sound.generated_tracks.pop(0)
 
 
@@ -206,6 +197,7 @@ class Piece:
         self.image = 0
         self.original_image = 0
 
+    @staticmethod
     def generate_id():  # Generates a unique id for each piece
         chars = string.ascii_lowercase + string.digits  # Includes lowercase letters and digits
         my_id = ''.join(random.choice(chars) for _ in range(4))
@@ -296,7 +288,8 @@ class Piece:
             self.pos_x, self.pos_y = Game.center_points[Piece.grid_to_b64index(self.grid_pos_x, self.grid_pos_y)]
             return None, None, None, None
 
-    def check_for_pieces_in_the_grid_coordinates(self, active_pieces, x, y):
+    @staticmethod
+    def check_for_pieces_in_the_grid_coordinates(active_pieces, x, y):
         for piece in active_pieces:
             if (piece.grid_pos_x == x and piece.grid_pos_y == y):
                 return True
@@ -355,15 +348,21 @@ class Piece:
         # pygame.draw.circle(screen, color, pos, self.rad)
 
     @staticmethod
+    def pov_based_pos_translation(x):  # it translated the coodinates of the enemie's pieces so you always see yours as the closest ones to the bottom of the screen, independently of the color.
+        return abs(x-Game.board_size+1)  # it just inverts the board in x and y
+
+    @staticmethod
     def is_clicked(mouse_pos, pos):
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
         return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
 
-    def resize(self, active_pieces):
+    @staticmethod
+    def resize(active_pieces):
         for piece in active_pieces:
             piece.grid_pos_to_pixels(piece.grid_pos_x, piece.grid_pos_y, change_mana=False, bypass_mana=True, update_variables=True)
             piece.image = Piece.smoothscale_images(piece.original_image)
 
+    @staticmethod
     def smoothscale_images(image_to_scale):
         # print(image_to_scale)
         return pygame.transform.smoothscale(image_to_scale, (Piece.pieces_dimension, Piece.pieces_dimension))
@@ -558,3 +557,38 @@ class Slider:
     def display_value(self):
         self.text = UI.fonts['m'].render(str(int(self.get_value())), True, "white", None)
         Game.screen.blit(self.text, self.label_rect)
+
+
+class Turn_Btn:
+
+    def __init__(self):
+
+        Turn_Btn.metrics = {"x": Game.height/1, "y": Game.height / 1.4, "w": Game.height / (5/1.512), "h": Game.height / 5}
+        Turn_Btn.original_image = Media.convert_img(pygame.image.load("resources\\images\\menu\\turn_btn.png"), "alpha")
+        Turn_Btn.image = pygame.transform.smoothscale(Turn_Btn.original_image, (Turn_Btn.metrics["w"], Turn_Btn.metrics["h"]))
+        Turn_Btn.rect = Turn_Btn.image.get_rect()
+        Turn_Btn.rect.topleft = (Turn_Btn.metrics["x"], Turn_Btn.metrics["y"])
+        Turn_Btn.image_mask = pygame.mask.from_surface(Turn_Btn.image)
+
+    def draw(self):
+
+        Game.screen.blit(Turn_Btn.image, Turn_Btn.rect)
+
+
+class Mini_Flags:
+
+    def __init__(self):
+
+        Mini_Flags.metrics = {"x": Game.height/0.905, "y": Game.height / 1.137, "w": Game.height / 14, "h": Game.height / 14}
+        Mini_Flags.original_image_red = Media.convert_img(pygame.image.load("resources\\images\\flag_red.png"), "alpha")
+        Mini_Flags.original_image_blue = Media.convert_img(pygame.image.load("resources\\images\\flag_blue.png"), "alpha")
+        Mini_Flags.image_red = pygame.transform.smoothscale(Mini_Flags.original_image_red, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
+        Mini_Flags.image_blue = pygame.transform.smoothscale(Mini_Flags.original_image_blue, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
+        Mini_Flags.rect = Mini_Flags.image_red.get_rect()
+        Mini_Flags.rect.topleft = (Mini_Flags.metrics["x"], Mini_Flags.metrics["y"])
+
+    def draw(self, current_turn):
+        if current_turn == "blue":
+            Game.screen.blit(Mini_Flags.image_blue, Mini_Flags.rect)
+        else:
+            Game.screen.blit(Mini_Flags.image_red, Mini_Flags.rect)

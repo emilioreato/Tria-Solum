@@ -66,9 +66,3 @@ class Portforwarding:
     def close_port(port):
         print("closing specified port...")
         Portforwarding.execute_command(f"{Portforwarding.upnpc_tool_absolute_path} -d {port} TCP")
-
-
-"""
-Portforwarding.initialize()
-Portforwarding.open_port(online_tools.Online.get_local_ip(), 8050, 8050, "TCP", Portforwarding.upnpc_tool_absolute_path)
-Portforwarding.close_port(8050)"""

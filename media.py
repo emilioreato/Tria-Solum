@@ -1,11 +1,14 @@
+from typing import Any
 import pygame
 
 
 class Media:
 
-    def load_media():
+    def __init__(self):
+        pass
 
-        Media.backgrounds = []
+    def load_media():
+        """Media.backgrounds = []
         for i in range(0, Media.BACKGROUNDS_AMOUNT):
             bkg_img = pygame.image.load(f"resources\\images\\background{i}.png")  # load some images, converts it for optimization and then scales them.
             bkg_img = pygame.transform.smoothscale(bkg_img, (Media.width, Media.height))
@@ -51,10 +54,16 @@ class Media:
                             Media.shrink_btn_rect,
                             Media.minimize_btn_rect,
                             Media.settings_btn_rect
-                            )
+                            )"""
 
     @staticmethod
-    def resize(cls, image, size_x, size_y, do_convert, convert_mode="default"):
+    def convert_img(image, mode="default"):  # a function used to convert the images to the pygame format. you can choose between normal or alpha mode
+        if mode == "alpha":
+            return image.convert_alpha()
+        return image.convert()
+
+    @staticmethod
+    def resize(image, size_x, size_y, do_convert, convert_mode="default"):
         image = pygame.transform.smoothscale(image, (size_x, size_y))
         if do_convert:
             if convert_mode == "default":
