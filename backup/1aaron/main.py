@@ -12,8 +12,6 @@ import ctypes
 import math
 import random
 import dev_mouse
-from online_utilities import firewall, online_tools, portforwarding
-import threading
 
 # SETING THINGS UP
 
@@ -26,163 +24,24 @@ pygame.init()  # Inicializar Pygame
 pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
 pygame.mixer.music.set_volume(0.4)
 
-game.set_up_window(1.8)
+game.set_up_window()
 clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
 game.load_resources()
 game.create_center_points()
 
 
-def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
-    global port
-    port = 8050  # this port seems to work pretty well
-    firewall.FirewallRules.check_firewall_installation_status('online_utilities\\rules.txt', port)
-
-    local_ip = online_tools.Online.get_local_ip()
-    print(local_ip)
-
-    portforwarding.Portforwarding.initialize()
-    if not portforwarding.Portforwarding.check_ports(port):
-        portforwarding.Portforwarding.open_port(local_ip, port, port, "TCP")
-
-    choice = input("Unirse a partida(1) o crear una partida(2):").strip()
-    if (choice == "1"):
-        global sckt
-        sckt = online_tools.Client()
-        ip = input("Ingrese la clave de la partida:").strip()
-        sckt.set_up_client(ip, port)
-    else:
-
-        sckt = online_tools.Server()
-        print("La clave de tu partida es:", online_tools.Online.get_public_ip())
-        sckt.set_up_server(port)
-
-
-set_up_online()
-
-my_team = input("elige un equipo 'blue' o 'red' para empezar:").strip()
-
-
-if my_team == "blue":  # a quick definition of the enemy team
-    enemy_team = "red"
-else:
-    enemy_team = "blue"
-
-time.sleep(1)
-print("creating pieces")
-active_pieces = []
-x1 = int(input("elige una coordenada x:").strip())
-x2 = int(input("elige una coordenada x:").strip())
-
-my_pieces = [
-    clases.Knight(x1, 1, my_team, 20, 10, 1, 2, 3),
-    clases.Mage(x2, 3, my_team, 13, 12, 1, 0, 1),
-    clases.Archer(x2*2, 6, my_team, 17, 10, 3, 1, 2),
-]
-active_pieces += my_pieces
-
-sckt.send("Pieces have been chosen. Start.")
-sckt.recieve()  # waits for the other player to catchup
-
-for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemie active_pieces list
-    sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
-
-
-def pov_based_pos_translation(x):  # it translated the coodinates of the enemie's pieces so you always see yours as the closest ones to the bottom of the screen, independently of the color.
-    return abs(x-clases.Game.board_size+1)  # it just inverts the board in x and y
-
-
-def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
-    while True:  # infinite loop while the program is executed
-        entry = sckt.recieve()  # reads the message(s) from the buffer and stores them
-        print(entry, "recibido")
-        for entry in entry.split(";"):  # iterates over each message that are separated by ";".
-            args = entry.split("-")  # gets all the arguments in a list. the fisrt item of the list is the action btw
-            print(args)
-            match args[0]:  # decides what to do based on the action received
-                case "attacked":  # id-id2 . thats the format this case expects to receive. id is the identifier of the attacker and id2 is the identifier of the attacked piece
-                    for piece in active_pieces:
-                        if piece.id == args[1]:
-                            for attacked_piece in active_pieces:
-                                if attacked_piece.id == args[2]:
-                                    piece.attack(attacked_piece)  # those for loops just find the attacker and the attacked piece in the actieve_pieces list and then this line executes the attack
-                                    break
-                case "moved":  # id-x-y. thats the format this case expects to receive. id is the identifier of the piece that moved and x and y are the new coordinates
-                    piece_id = args[1]
-                    for piece in active_pieces:
-                        if piece.id == piece_id:
-                            # those for loops just find the piece in the actieve_pieces list and then this line executes the move
-                            piece.grid_pos_to_pixels(pov_based_pos_translation(int(args[2])), pov_based_pos_translation(int(args[3])), bypass_mana=False, change_mana=True)
-                case "turn":
-                    change_turn()
-                case "created":  # specie-x-y-team-hp-mana-agility-defense-damage-id. thats the format this case expects to receive, all the arguments to create a new piece which is going to be exactly the same as the one our enemie created
-                    p_specie = args[1]
-                    p_x = pov_based_pos_translation(int(args[2]))
-                    p_y = pov_based_pos_translation(int(args[3]))
-                    p_team = args[4]
-                    p_hp = int(args[5])
-                    p_mana = int(args[6])
-                    p_agility = int(args[7])
-                    p_defense = int(args[8])
-                    p_damage = int(args[9])
-                    p_id = args[10]
-
-                    print("info recevibed: ", p_specie, "  ", p_x, "  ", p_y, "  ", p_team, "  ", p_hp, "  ", p_mana, "  ", p_agility, "  ", p_defense, "  ", p_damage, "  ", p_id)
-
-                    if p_specie == "mage":  # based on the specie of the piece we use different clases
-                        active_pieces.append(clases.Mage(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
-                        print(active_pieces)
-                    elif p_specie == "archer":
-                        active_pieces.append(clases.Archer(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
-                        print(active_pieces)
-                    elif p_specie == "knight":
-                        active_pieces.append(clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
-                        print(active_pieces)
-                case "exit":
-                    print("the enemie has abandoned the game")
-
-        print("in da for")
-
-
-threading.Thread(target=receive_messages, daemon=True).start()  # created the thread that constantly looks for new messages
-
-
-def finish_program():  # this function closes the program
-    global running
-    running = False  # in case some thread ends up in the main "while" loop you make sure it stops anyways
-    try:
-        sckt.send("exit")
-    except:
-        pass
-    try:
-        if (sckt.mode == "server"):
-            sckt.close()  # you should to close the socket
-    except:
-        pass
-    try:
-        portforwarding.Portforwarding.close_port(port)  # when the app is about to close you also need to close the port for security reasons
-    except:
-        pass
-    time.sleep(0.4)
-    try:
-        stopmusic()
-        pygame.quit()
-        sys.exit()
-    except:
-        sys.exit()
-
-
 # GENERAL VARIABLES
 
-
-bar_x = (game.width/16.991)
-bar_y = (game.height/1.095) - 838
-rm_image = pygame.image.load("resources/images/red_mage.png")
-rm_x = bar_x - 55
-rm_image = pygame.transform.smoothscale(rm_image, (70, 70))
-# images = [clases.Mage.loadimages()]
-# for image in images
-# selected_piece = None
+active_pieces = [
+    clases.Mage(5, 5, 30, "blue"),
+    clases.Mage(4, 4, 30, "red"),
+    clases.Archer(6, 6, 30, "red"),
+    clases.Archer(7, 7, 30, "blue"),
+    clases.Knight(1, 1, 30, "red"),
+    clases.Knight(2, 6, 30, "blue")
+]
+selected_piece = None
 
 show_config_menu = False
 
@@ -201,7 +60,7 @@ current_turn = "blue"
 
 # Crear una superficie para el botón
 button_surface = pygame.Surface((140, 40), pygame.SRCALPHA)
-pass_turn_button_rect = button_surface.get_rect(center=(game.width//1.85, game.height//1.087))
+button_rect = button_surface.get_rect(center=(game.width//1.85, game.height//1.087))
 
 # Dibujar el rectángulo en la superficie
 pygame.draw.rect(button_surface, (0, 255, 0), button_surface.get_rect())
@@ -213,7 +72,7 @@ button_surface.blit(text_surface, (10, 5))  # Colocar el texto sobre el rectáng
 
 # Rotar la superficie 45 grados a la izquierda
 rotated_surface = pygame.transform.rotate(button_surface, 45)
-rotated_rect = rotated_surface.get_rect(center=pass_turn_button_rect.center)
+rotated_rect = rotated_surface.get_rect(center=button_rect.center)
 
 # Dibujar el botón rotado
 game.screen.blit(rotated_surface, rotated_rect.topleft)
@@ -224,8 +83,7 @@ config_menu = clases.Menu()
 
 
 # USEFUL FUNCTIONS
-
-def change_turn():  # changes the current turn from blue to red or red to blue
+def change_turn():
     global current_turn
     if current_turn == "blue":
         current_turn = "red"
@@ -254,21 +112,20 @@ def set_mouse_usage(visible=False, grab=True):
     pygame.event.set_grab(grab)
 
 
-set_mouse_usage(True, False)
+set_mouse_usage()
 
 UI_REFRESH_RATE = game.timer.tick(game.dev_mode.DisplayFrequency)/1000
 manager = pygame_gui.UIManager((game.width, game.height))
 
 
 def draw():
-
     game.screen.blit(game.backgrounds[selected_background], (0, 0))  # displaying background
     text_surface = font.render("Finalizar Turno", True, (255, 255, 255))
     button_surface.blit(text_surface, (10, 5))  # Colocar el texto sobre el rectángulo
 
     # Rotar la superficie 45 grados a la izquierda
     rotated_surface = pygame.transform.rotate(button_surface, 45)
-    rotated_rect = rotated_surface.get_rect(center=pass_turn_button_rect.center)
+    rotated_rect = rotated_surface.get_rect(center=button_rect.center)
 
     if current_turn == "blue":
         pygame.draw.rect(button_surface, (0, 0, 255), button_surface.get_rect())
@@ -277,21 +134,16 @@ def draw():
         pygame.draw.rect(button_surface, (255, 0, 0), button_surface.get_rect())
         game.screen.blit(rotated_surface, rotated_rect.topleft)
 
-    if (ite0 == 250):
-        print("wow", len(active_pieces))
     for piece in active_pieces:    # displaying all pieces
         piece.draw(game.screen, piece.image)
-        piece.draw_health_bar(game.screen, active_pieces.index(piece), my_team, piece.team)
-
-    game.screen.blit(rm_image, (rm_x, bar_y))
 
     game.screen.blit(game.x_btn, (game.x_btn_metrics["x"], game.x_btn_metrics["y"]))  # displaying btns
     game.screen.blit(game.shrink_btn, (game.shrink_btn_metrics["x"], game.shrink_btn_metrics["y"]))
     game.screen.blit(game.minimize_btn, (game.minimize_btn_metrics["x"], game.minimize_btn_metrics["y"]))
     game.screen.blit(game.settings_btn, (game.settings_btn_metrics["x"], game.settings_btn_metrics["y"]))
 
-    # for i in game.center_points:
-    #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
+    for i in game.center_points:
+        pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), 15)
 
     if show_config_menu:
         config_menu.run(show_music=show_config_menu)
@@ -318,10 +170,6 @@ ite2 = 0
 
 init_time = time.time()  # saves the time when the loop was entered
 while True:  # Main loop
-    for piece in active_pieces:
-        if piece.hp <= 0 and selected_piece != None:
-            active_pieces.remove(piece)
-            selected_piece = None
 
     # checks if its due to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
     if (ite0 >= 600 or (ite0 == 0 and time.time()-init_time < 20)):
@@ -352,26 +200,22 @@ while True:  # Main loop
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # then event.pos is used and it only tells the position of the mouse when the event occured
 
-                if pass_turn_button_rect.collidepoint(event.pos):  # Verificar si el clic fue sobre el botón
+                if button_rect.collidepoint(event.pos):  # Verificar si el clic fue sobre el botón
                     change_turn()
-                    sckt.send("turn")
 
                 for piece in active_pieces:  # Checks if any piece was clicked
                     if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
                         print("pieza clickeada")
-
-                        if piece.team == my_team:
-                            selected_piece = active_pieces.index(piece)
-                            if (current_turn == "blue" and active_pieces[selected_piece].team == "blue") or (current_turn == "red" and active_pieces[selected_piece].team == "red"):
-                                follow_mouse = True
-                            elif (current_turn == "blue" and active_pieces[selected_piece].team == "red") or (current_turn == "red" and active_pieces[selected_piece].team == "blue"):
-                                print("No es tu turno")
-                        elif current_turn == my_team and selected_piece != None:
-                            sckt.send(f"attacked-{active_pieces[selected_piece].id}-{piece.id}")
-                            active_pieces[selected_piece].attack(piece)
+                        selected_piece = active_pieces.index(piece)
+                        if (current_turn == "blue" and active_pieces[selected_piece].team == "blue") or (current_turn == "red" and active_pieces[selected_piece].team == "red"):
+                            follow_mouse = True
+                        elif (current_turn == "blue" and active_pieces[selected_piece].team == "red") or (current_turn == "red" and active_pieces[selected_piece].team == "blue"):
+                            print("No es tu turno")
 
                 if collidepoint_with_sound(game.x_btn_rect, event.pos):  # check if btn was clicked
-                    finish_program()
+                    time.sleep(0.4)
+                    pygame.quit()
+                    sys.exit()
                 elif collidepoint_with_sound(game.shrink_btn_rect, event.pos):  # check if btn was clicked
                     shrink_state = not shrink_state  # pulsator to conmutator logic
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so its position can be changed
@@ -424,10 +268,6 @@ while True:  # Main loop
                         active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=True)
                     print(active_pieces[selected_piece].mana)
 
-                    string_we_send = f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}"
-                    print(string_we_send)
-                    sckt.send(string_we_send)  # "moved":  # [id]-[x]-[y]
-
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
             if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
                 selected_background += 1
@@ -452,15 +292,17 @@ while True:  # Main loop
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "n"):
                 clases.Sound.play_song(sound_player.PLAYLIST)
-            elif (pygame.key.name(event.key) == "h"):
-                if selected_piece != None:
-                    active_pieces[selected_piece].hp -= 1
-
             elif (pygame.key.name(event.key) == "escape"):
-                finish_program()
+                time.sleep(0.4)
+                stopmusic()
+                pygame.quit()
+                sys.exit()
 
         elif event.type == pygame.QUIT:
-            finish_program()
+            time.sleep(0.4)
+            stopmusic()
+            pygame.quit()
+            sys.exit()
 
     draw()
 

@@ -1,0 +1,13 @@
+"""while True:  # waits for the other player to connect
+
+    if sckt.mode == "server":
+        sckt.send("on", delimiter="")
+        time.sleep(0.5)
+        entry_S = sckt.recieve()
+        if entry_S == "ready":
+            break
+    if sckt.mode == "client":
+        entry = sckt.recieve()
+        if entry == "on":
+            sckt.send("ready", delimiter="")
+            break"""

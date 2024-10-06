@@ -6,11 +6,9 @@ import pyautogui
 import threading
 import wave
 import pyaudio
-import media
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
 import random
-import string
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
@@ -176,77 +174,30 @@ class Sound:
 
 class Piece:
 
+    init_hp = 100  # define some default values for ingame variables
+    init_mana = 11
+    init_agility = 100
+    init_defense = 100
+    init_damage = 100
+
     pieces_dimension = 0
 
-    pieces_ids = []
-
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):  # init method for evety piece where it gets another ingame values assigned
-        self.max_hp = hp
-        self.max_mana = mana
+    def __init__(self, x, y, team):  # init method for evety piece where it gets another ingame values assigned
         self.team = team
         self.grid_pos_x = x
         self.grid_pos_y = y
         self.pos_x = 0
         self.pos_y = 0
-
-        self.specie = None
-
-        if (specify_id == None):
-            self.id = Piece.generate_id()
-        else:
-            self.id = specify_id
         Piece.grid_pos_to_pixels(self, x, y, bypass_mana=True, change_mana=False)
 
-        self.hp = hp
-        self.mana = mana
-        self.agility = agility
-        self.defense = defense
-        self.damage = damage
+        self.hp = Piece.init_hp
+        self.mana = Piece.init_mana
+        self.agility = Piece.init_agility
+        self.defense = Piece.init_defense
+        self.damage = Piece.init_damage
 
         self.image = 0
         self.original_image = 0
-
-    def generate_id():  # Generates a unique id for each piece
-        chars = string.ascii_lowercase + string.digits  # Includes lowercase letters and digits
-        my_id = ''.join(random.choice(chars) for _ in range(4))
-        for piece_id in Piece.pieces_ids:
-            if piece_id == my_id:
-                return Piece.generate_id()
-        Piece.pieces_ids.append(my_id)
-        return my_id
-
-    def modify_hp(self, change):
-
-        self.hp += change
-
-    def attack(self, atacked_piece):
-        atacked_piece.modify_hp(0 - self.damage)
-
-    def draw_health_bar(self, screen, index, my_team, team):
-
-        bar_width = 300
-        bar_height = 30
-        # Calcula la longitud de la barra de vida en función del porcentaje de vida
-        health_percentage = self.hp / self.max_hp
-        health_bar_length = int(bar_width * health_percentage)
-
-        # Posición de la barra (ajusta según tu diseño)
-        # Colores para la barra de vida (verde y rojo)
-        health_color = (170, 0, 10)  # Verde para la vida restante
-        background_color = (30, 0, 0)  # Rojo para la vida perdida
-
-        bar_x = (Game.width/16.991)  # Mueve un poco la barra a la izquierda de la pieza
-        if team == my_team:
-            bar_y = (Game.height/1.095)  # Ajusta para colocar la barra debajo de la pieza
-            bar_y = bar_y - index * 75
-        else:
-            bar_y = (Game.height/22)
-            bar_y = bar_y + index * 75 - Game.height/6
-
-        pygame.draw.rect(screen, background_color, (bar_x, bar_y, bar_width, bar_height))
-
-        # Dibuja la barra de vida restante (verde)
-        pygame.draw.rect(screen, health_color, (bar_x, bar_y, health_bar_length, bar_height))
 
     @classmethod
     def set_dimension(cls, mult=1, screenratio=1):
@@ -254,7 +205,7 @@ class Piece:
         # _, screen_height = pyautogui.size()  # gets the current resolution
         # height = round(screen_height/screenratio)  # reduces the height
         cls.pieces_dimension = round((Game.height // 14) / mult)
-        print("pieces_dimension:", cls.pieces_dimension)
+        print(cls.pieces_dimension)
 
     @staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
@@ -347,7 +298,6 @@ class Piece:
 
     def draw(self, screen, img, pos=0):
         # print(self.pos_x, self.pos_y)
-
         if pos:
             screen.blit(img, (pos[0]-Piece.pieces_dimension//2, pos[1]-Piece.pieces_dimension//2))
         else:
@@ -371,11 +321,9 @@ class Piece:
 
 class Mage(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
-
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
-
-        self.specie = "mage"
+    def __init__(self, x, y, mana, team):
+        super().__init__(x, y, team)
+        self.mana = mana
 
         Mage.loadimages()
 
@@ -395,10 +343,9 @@ class Mage(Piece):
 
 class Archer(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
-
-        self.specie = "archer"
+    def __init__(self, x, y, mana, team):
+        super().__init__(x, y, team)
+        self.mana = mana
 
         Archer.loadimages()
 
@@ -418,10 +365,9 @@ class Archer(Piece):
 
 class Knight(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
-
-        self.specie = "knight"
+    def __init__(self, x, y, mana, team):
+        super().__init__(x, y, team)
+        self.mana = mana
 
         Knight.loadimages()
 
