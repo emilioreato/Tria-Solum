@@ -435,7 +435,7 @@ class Menu:
         Game.screen.blit(Menu.config_menu_alpha_image, (Game.height/0.8, Game.height / 10))  # displaying its background
 
         if show_music:
-            Game.screen.blit(Game.music_btn, (Game.music_btn_metrics["x"], Game.music_btn_metrics["y"]))
+            Game.screen.blit(Media.sized["music_btn"], (Media.metrics["music_btn"]["x"], Media.metrics["music_btn"]["y"]))
             for slider in self.sliders:
                 if slider.container_rect.collidepoint(mouse_pos):
                     if mouse[0]:

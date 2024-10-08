@@ -38,7 +38,6 @@ from media import Media
 game = clases.Game()
 sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
-
 pygame.init()  # Inicializar Pygame
 pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
 pygame.mixer.music.set_volume(0.4)
@@ -51,9 +50,48 @@ Media.resize(game.height)
 
 game.create_center_points()
 
+
+time.sleep(0.05)
+
+# GENERAL VARIABLES
+
+active_uis = {
+    "lobby": True,
+    "piece_selection": True,
+    "ingame": False,
+    "settings": False,
+    "chat": False,
+}
+
+my_pieces = []
+reference_pieces = []
+active_pieces = []
+
 play_online = True
 # my_team = "blue"
 
+global selected_piece
+selected_piece = None
+
+follow_mouse = False
+shrink_state = False
+show_cursor_image = True
+cursor = Media.sized["cursor_default"]
+
+selected_background = 0  # backgrounds related variables
+
+music_pause_state = False  # audio related variables
+current_volume = 0.5
+
+
+clases.UI.init()
+piece_selection_menu = clases.Piece_Selection_Menu()
+config_menu = clases.Menu()
+turn_btn = clases.Turn_Btn()
+mini_flag = clases.Mini_Flags()
+
+
+# USEFUL FUNCTIONS
 
 def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
     global port
@@ -80,84 +118,23 @@ def set_up_online():  # this function sets up the server and client objects as a
         sckt.set_up_server(port)
 
 
-def assign_teams():  # this function assigns the teams to the players
-    global my_team
-    if (play_online):  # choosing of the teams and setting up the socket connection
-        set_up_online()
+if play_online:
+    set_up_online()
 
-        if (sckt.mode == "server"):
-            my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
-            sckt.send(my_team, delimiter="")
-            if my_team == "blue":  # a quick definition of the enemy team
-                enemy_team = "red"
-            else:
-                enemy_team = "blue"
-        else:
-            enemy_team = sckt.recieve()
-            if enemy_team == "blue":  # a quick definition of the enemy team
-                my_team = "red"
-            else:
-                my_team = "blue"
-
-
-assign_teams()
-
-
-def assign_turn():
-    global current_turn
-    if (sckt.mode == "server"):
-        current_turn = random.choice(["blue", "red"])
-        sckt.send(current_turn, delimiter="")
-    else:
-        current_turn = sckt.recieve()
-
-
-assign_turn()
-
-time.sleep(0.5)
-print("creating pieces")
-reference_pieces = []
-active_pieces = []
-
-# GENERAL VARIABLES
-
-active_uis = {
-    "lobby": True,
-    "piece_selection": True,
-    "settings": False,
-    "chat": False,
-}
-
-global selected_piece
-selected_piece = None
-
-follow_mouse = False
-shrink_state = False
-show_cursor_image = True
-cursor = Media.sized["cursor_default"]
-
-selected_background = 0  # backgrounds related variables
-
-music_pause_state = False  # audio related variables
-current_volume = 0.5
-
-
-clases.UI.init()
-piece_selection_menu = clases.Piece_Selection_Menu()
-config_menu = clases.Menu()
-turn_btn = clases.Turn_Btn()
-mini_flag = clases.Mini_Flags()
-
-
-# USEFUL FUNCTIONS
 
 def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
     while True:  # infinite loop while the program is executed
         entry = sckt.recieve()  # reads the message(s) from the buffer and stores them
         print(entry, "recibido")
         for entry in entry.split(";"):  # iterates over each message that are separated by ";".
+
+            if type(entry) == list:
+                if entry[-1] == "":
+                    entry.pop(-1)  # gets rid of the last item of the list if it is an empty string
+
             args = entry.split("-")  # gets all the arguments in a list. the fisrt item of the list is the action btw
             print(args)
+
             match args[0]:  # decides what to do based on the action received
                 case "attacked":  # id-id2 . thats the format this case expects to receive. id is the identifier of the attacker and id2 is the identifier of the attacked piece
                     for piece in active_pieces:
@@ -166,14 +143,17 @@ def receive_messages():  # This function receives messages from the server while
                                 if attacked_piece.id == args[2]:
                                     piece.attack(attacked_piece)  # those for loops just find the attacker and the attacked piece in the actieve_pieces list and then this line executes the attack
                                     break
+
                 case "moved":  # id-x-y. thats the format this case expects to receive. id is the identifier of the piece that moved and x and y are the new coordinates
                     piece_id = args[1]
                     for piece in active_pieces:
                         if piece.id == piece_id:
                             # those for loops just find the piece in the actieve_pieces list and then this line executes the move
                             piece.grid_pos_to_pixels(clases.Piece.pov_based_pos_translation(int(args[2])), clases.Piece.pov_based_pos_translation(int(args[3])), bypass_mana=False, change_mana=True)
+
                 case "turn":
                     change_turn()
+
                 case "created":  # specie-x-y-team-hp-mana-agility-defense-damage-id. thats the format this case expects to receive, all the arguments to create a new piece which is going to be exactly the same as the one our enemy created
                     p_specie = args[1]
                     p_x = clases.Piece.pov_based_pos_translation(int(args[2]))
@@ -197,14 +177,53 @@ def receive_messages():  # This function receives messages from the server while
                     elif p_specie == "knight":
                         active_pieces.append(clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
                         print(active_pieces)
+
                 case "dead":
                     for piece in active_pieces:
                         if piece.id == args[1]:
                             active_pieces.remove(piece)
                     global selected_piece
                     selected_piece = None
+
                 case "exit":
                     print("the enemy has abandoned the game")
+
+                case _:
+                    print("unknown command:", args[0])
+
+
+def assign_teams():  # this function assigns the teams to the players
+    global my_team
+    if (sckt.mode == "server"):  # choosing of the teams and setting up the socket connection
+        my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
+        sckt.send(my_team, delimiter="")
+        if my_team == "blue":  # a quick definition of the enemy team
+            enemy_team = "red"
+        else:
+            enemy_team = "blue"
+    else:
+        enemy_team = sckt.recieve()
+        if enemy_team == "blue":  # a quick definition of the enemy team
+            my_team = "red"
+        else:
+            my_team = "blue"
+
+
+if (play_online):
+    assign_teams()
+
+
+def assign_turn():
+    global current_turn
+    if (sckt.mode == "server"):
+        current_turn = random.choice(["blue", "red"])
+        sckt.send(current_turn, delimiter="")
+    else:
+        current_turn = sckt.recieve()
+
+
+if play_online:
+    assign_turn()
 
 
 def finish_program():  # this function closes the program
@@ -279,7 +298,7 @@ def draw():
 
     game.screen.blit(Media.backgrounds[selected_background], (0, 0))  # displaying background
 
-    if (ite0 == 250):
+    if (ite0 == 400 and active_uis["ingame"]):
         print("wow", len(active_pieces))
 
     game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
@@ -324,8 +343,8 @@ def stopmusic():
 
 
 if play_online:
-
-    threading.Thread(target=receive_messages, daemon=True).start()  # created the thread that constantly looks for new messages
+    pass
+    # threading.Thread(target=receive_messages, daemon=True).start()  # created the thread that constantly looks for new messages
 
 # varibles needed to control fps
 start_time = time.time()  # Record the starting time
@@ -440,11 +459,13 @@ while True:  # Main loop
                                     piece = clases.Mage(0, 0, my_team, 20, 20, 20, 20, 2)
                                 case "archer":
                                     piece = clases.Archer(0, 0, my_team, 20, 20, 20, 20, 2)
-                                case _:
+                                case "knight":
                                     piece = clases.Knight(0, 0, my_team, 20, 20, 20, 20, 2)
 
                             active_pieces.append(piece)
                             selected_piece = active_pieces.index(piece)
+
+                            break
 
             elif event.button == 3:
                 if Media.rects["music_btn"].collidepoint(event.pos):  # check if btn was clicked
@@ -470,21 +491,29 @@ while True:  # Main loop
                         active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=True)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
                     else:
                         active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=True)
-                    print(active_pieces[selected_piece].mana)
+                    # print(active_pieces[selected_piece].mana)
 
-                    string_we_send = f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}"
-                    print(string_we_send)
-                    if (play_online):
-                        sckt.send(string_we_send)  # "moved":  # [id]-[x]-[y]
+                    if active_uis["ingame"] and play_online:
+                        sckt.send(f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}")  # "moved":  # [id]-[x]-[y]
 
-                    if active_uis["piece_selection"] and (len(active_pieces) >= 3):
-                        active_uis["piece_selection"] = False
+                    elif active_uis["piece_selection"]:
+                        my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
+                        if (len(my_pieces) >= 3):
+                            active_uis["piece_selection"] = False
 
-                        if play_online:
-                            sckt.send("Pieces have been chosen. Start.")
-                            sckt.recieve()  # waits for the other player to catchup
-                            for piece in active_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
-                                sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
+                            if play_online:
+                                msg = "Pieces have been chosen. Start."
+                                sckt.send(msg, delimiter="")
+                                while True:
+                                    received = sckt.recieve()  # waits for the other player to catchup
+                                    if (received == msg):
+                                        break
+                                for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
+                                    sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
+                            my_pieces = {}
+                            print("BEGGINING SECULARRRRRRRR")
+                            threading.Thread(target=receive_messages, daemon=True).start()
+                            active_uis["ingame"] = True
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
             if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images

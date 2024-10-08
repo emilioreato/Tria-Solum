@@ -40,6 +40,7 @@ class Server(Online):  # a class that contains all the functions and utilities t
 
     def send(self, message, delimiter=";"):  # ; is a delimiter so that it can separete different messages
         self.manager.send((message+delimiter).encode('utf-8'))  # sending utf-8 encoded messages
+        print((message+delimiter))
 
     def recieve(self):
         return self.manager.recv(1024).decode("utf-8")  # getting utf-8 encoded messages that were sent to us
@@ -66,6 +67,7 @@ class Client(Online):
 
     def send(self, message, delimiter=";"):  # ; is a delimiter so that it can separete different messages
         self.socket.send((message+delimiter).encode('utf-8'))  # sending utf-8 encoded messages
+        print((message+delimiter))
 
     def recieve(self):
         return self.socket.recv(1024).decode("utf-8")  # getting utf-8 encoded messages that were sent to us
