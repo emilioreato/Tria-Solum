@@ -15,6 +15,7 @@ import dev_mouse
 from online_utilities import firewall, online_tools, portforwarding
 import threading
 import installer
+from media import Media
 
 # SETING THINGS UP
 
@@ -30,16 +31,22 @@ pygame.mixer.music.set_volume(0.4)
 game.set_up_window(1.4)
 clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
-game.load_resources()
+Media.load_media(game.height)
+Media.resize(game.height)
+
 game.create_center_points()
 
-play_online = True
-# my_team = "blue"
+play_online = False
+my_team = "blue"
 
 
-modules_to_install = installer.Installer.check_modules_installation_status("installation_status.txt")  # this 3 lines check if the needed modules are installed, if not it installs them
-if modules_to_install:
-    installer.Installer.install_modules_from_list(modules_to_install, "installation_status.txt")
+def install_libraries():
+    libraries_to_install = installer.Installer.check_libraries_installation_status("installation_status.txt")  # this 3 lines check if the needed modules are installed, if not it installs them
+    if libraries_to_install:
+        installer.Installer.install_libraries_from_list(libraries_to_install, "installation_status.txt")
+
+
+install_libraries()
 
 
 def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
@@ -67,72 +74,75 @@ def set_up_online():  # this function sets up the server and client objects as a
         sckt.set_up_server(port)
 
 
-if (play_online):
-    set_up_online()
+def assign_teams():  # this function assigns the teams to the players
+    global my_team
+    if (play_online):  # choosing of the teams and setting up the socket connection
+        set_up_online()
 
-    if (sckt.mode == "server"):
-        my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
-        sckt.send(my_team, delimiter="")
-        if my_team == "blue":  # a quick definition of the enemy team
-            enemy_team = "red"
+        if (sckt.mode == "server"):
+            my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
+            sckt.send(my_team, delimiter="")
+            if my_team == "blue":  # a quick definition of the enemy team
+                enemy_team = "red"
+            else:
+                enemy_team = "blue"
         else:
-            enemy_team = "blue"
-    else:
-        enemy_team = sckt.recieve()
-        if enemy_team == "blue":  # a quick definition of the enemy team
-            my_team = "red"
-        else:
-            my_team = "blue"
+            enemy_team = sckt.recieve()
+            if enemy_team == "blue":  # a quick definition of the enemy team
+                my_team = "red"
+            else:
+                my_team = "blue"
+
+
+assign_teams()
 
 
 time.sleep(0.5)
 print("creating pieces")
+reference_pieces = []
 active_pieces = []
-# x1 = int(input("elige una coordenada x:").strip())
-# x2 = int(input("elige una coordenada x:").strip())
 
-my_pieces = [
-    clases.Knight(5, 1, my_team, 20, 10, 1, 2, 3),
-    clases.Mage(2, 3, my_team, 13, 12, 1, 0, 1),
-    clases.Archer(1*2, 6, my_team, 17, 10, 3, 1, 2),
-]
-active_pieces += my_pieces
+active_pieces += reference_pieces
+
+if play_online:
+    sckt.recieve()  # wait till we receive the confirmation of pieces being created
 
 if play_online:
     sckt.send("Pieces have been chosen. Start.")
     sckt.recieve()  # waits for the other player to catchup
 
-    for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemie active_pieces list
+if play_online:
+    for piece in reference_pieces:  # sends the comand to create your chosen pieces in the enemie active_pieces list
         sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
 
 
 # GENERAL VARIABLES
-bar_x = (game.width/16.991)
-bar_y = (game.height/1.095) - 838
-rm_image = pygame.image.load("resources/images/red_mage.png")
-rm_x = bar_x - 55
-rm_image = pygame.transform.smoothscale(rm_image, (70, 70))
+
+active_uis = {
+    "lobby": True,
+    "piece_selection": True,
+    "settings": False,
+    "chat": False,
+}
 
 global selected_piece
 selected_piece = None
 
-show_config_menu = False
-
 follow_mouse = False
 shrink_state = False
 show_cursor_image = True
-cursor = game.cursor_default
+cursor = Media.sized["cursor_default"]
 
 selected_background = 0  # backgrounds related variables
 
 music_pause_state = False  # audio related variables
 current_volume = 0.5
 global current_turn
-global rotated_surface, rotated_rect
 current_turn = random.choice(["blue", "red"])
 
 
 clases.UI.init()
+piece_selection_menu = clases.Piece_Selection_Menu()
 config_menu = clases.Menu()
 turn_btn = clases.Turn_Btn()
 mini_flag = clases.Mini_Flags()
@@ -266,29 +276,41 @@ manager = pygame_gui.UIManager((game.width, game.height))
 
 def draw():
 
-    game.screen.blit(game.backgrounds[selected_background], (0, 0))  # displaying background
+    game.screen.blit(Media.backgrounds[selected_background], (0, 0))  # displaying background
 
     if (ite0 == 250):
         print("wow", len(active_pieces))
-    for piece in active_pieces:    # displaying all pieces
-        piece.draw(game.screen, piece.image)
-        piece.draw_health_bar(game.screen, active_pieces.index(piece), my_team, piece.team)
 
-    game.screen.blit(rm_image, (rm_x, bar_y))
-
-    game.screen.blit(game.x_btn, (game.x_btn_metrics["x"], game.x_btn_metrics["y"]))  # displaying btns
-    game.screen.blit(game.shrink_btn, (game.shrink_btn_metrics["x"], game.shrink_btn_metrics["y"]))
-    game.screen.blit(game.minimize_btn, (game.minimize_btn_metrics["x"], game.minimize_btn_metrics["y"]))
-    game.screen.blit(game.settings_btn, (game.settings_btn_metrics["x"], game.settings_btn_metrics["y"]))
+    game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
+    game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
+    game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
+    game.screen.blit(Media.sized["setting_btn"], (Media.metrics["setting_btn"]["x"], Media.metrics["setting_btn"]["y"]))
 
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
-    if show_config_menu:
-        config_menu.run(show_music=show_config_menu)
+    if active_uis["settings"]:
+        config_menu.run(show_music=True)
+
+    if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
+        if piece_selection_menu.already_executed == False:
+            piece_selection_menu.already_executed = True
+            global reference_pieces
+            reference_pieces = [
+                clases.Knight(clases.Piece_Selection_Menu.images_placement[0]["x"], clases.Piece_Selection_Menu.images_placement[0]["y"], my_team, 0, 0, 0, 0, 0, pos_mode="pixels"),
+                clases.Mage(clases.Piece_Selection_Menu.images_placement[1]["x"], clases.Piece_Selection_Menu.images_placement[1]["y"], my_team, 0, 0, 0, 0, 0,  pos_mode="pixels"),
+                clases.Archer(clases.Piece_Selection_Menu.images_placement[2]["x"], clases.Piece_Selection_Menu.images_placement[2]["y"], my_team, 0, 0, 0, 0, 0,  pos_mode="pixels")
+            ]
+        piece_selection_menu.draw(my_team)
+        for piece in reference_pieces:
+            piece.draw(game.screen, piece.image)
 
     mini_flag.draw(current_turn)
     turn_btn.draw()
+
+    for piece in active_pieces:    # displaying all pieces
+        piece.draw(game.screen, piece.image)
+        piece.draw_health_bar(game.screen, active_pieces.index(piece), my_team, piece.team)
 
     if show_cursor_image:  # displaying cursor
         game.screen.blit(cursor, pygame.mouse.get_pos())
@@ -301,6 +323,7 @@ def stopmusic():
 
 
 if play_online:
+
     threading.Thread(target=receive_messages, daemon=True).start()  # created the thread that constantly looks for new messages
 
 # varibles needed to control fps
@@ -332,10 +355,10 @@ while True:  # Main loop
         if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
             if (ite1 >= 15):
                 ite1 = 0
-                cursor = game.cursor_default
-                for rect in game.rects_list:
+                cursor = Media.sized["cursor_default"]
+                for rect in Media.rects.values():
                     if rect.collidepoint(event.pos):  # check if every btn was hovered
-                        cursor = game.cursor_hand
+                        cursor = Media.sized["cursor_hand"]
                         break
 
             if (ite2 >= 8):
@@ -367,15 +390,16 @@ while True:  # Main loop
                                 selected_piece = None
                             active_pieces.remove(piece)
 
-                if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
-                    change_turn()
-                    if play_online:
-                        sckt.send("turn")
-                    print("changed turn")
+                if my_team == current_turn or not play_online:
+                    if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
+                        change_turn()
+                        if play_online:
+                            sckt.send("turn")
+                        print("changed turn")
 
-                elif collidepoint_with_sound(game.x_btn_rect, event.pos):  # check if btn was clicked
+                if collidepoint_with_sound(Media.rects["x_btn"], event.pos):  # check if btn was clicked
                     finish_program()
-                elif collidepoint_with_sound(game.shrink_btn_rect, event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["shrink_btn"], event.pos):  # check if btn was clicked
                     shrink_state = not shrink_state  # pulsator to conmutator logic
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so its position can be changed
 
@@ -384,26 +408,45 @@ while True:  # Main loop
                         game.set_up_window(1.4)
                         clases.Piece.set_dimension()
                         game.create_center_points()
-                        game.load_resources()
-                        piece.resize(active_pieces)
+                        Media.resize_metrics(game.height)
+                        Media.resize(game.height)
+
+                        clases.Piece.resize(active_pieces)
                         set_mouse_usage(True, False)
                     else:
                         game.set_up_window(1, pygame.NOFRAME)
                         clases.Piece.set_dimension()
                         window.moveTo(0, 0)  # move the window
                         game.create_center_points()
-                        game.load_resources()
-                        piece.resize(active_pieces)
+                        Media.resize_metrics(game.height)
+                        Media.resize(game.height)
+
+                        clases.Piece.resize(active_pieces)
                         set_mouse_usage(False, True)
                         break
-                elif collidepoint_with_sound(game.minimize_btn_rect, event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["minimize_btn"], event.pos):  # check if btn was clicked
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
                     window.minimize()  # minimize the window
-                elif collidepoint_with_sound(game.settings_btn_rect, event.pos):  # check if btn was clicked
-                    show_config_menu = not show_config_menu
+                elif collidepoint_with_sound(Media.rects["setting_btn"], event.pos):  # check if btn was clicked
+                    active_uis["settings"] = not active_uis["settings"]
+
+                if active_uis["piece_selection"]:
+                    for ref_piece in reference_pieces:  # Checks if any piece was clicked
+                        if ref_piece.is_clicked(event.pos, (ref_piece.pos_x, ref_piece.pos_y)):  # Comprobar si el clic está dentro del circulo
+                            follow_mouse = True
+                            match ref_piece.specie:
+                                case "mage":
+                                    piece = clases.Mage(0, 0, my_team, 20, 20, 20, 20, 2)
+                                case "archer":
+                                    piece = clases.Archer(0, 0, my_team, 20, 20, 20, 20, 2)
+                                case _:
+                                    piece = clases.Knight(0, 0, my_team, 20, 20, 20, 20, 2)
+
+                            active_pieces.append(piece)
+                            selected_piece = active_pieces.index(piece)
 
             elif event.button == 3:
-                if game.music_btn_rect.collidepoint(event.pos):  # check if btn was clicked
+                if Media.rects["music_btn"].collidepoint(event.pos):  # check if btn was clicked
                     music_pause_state = not music_pause_state
                     if music_pause_state:
                         pygame.mixer.music.pause()

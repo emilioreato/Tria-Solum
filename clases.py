@@ -35,58 +35,6 @@ class Game:
     def __init__(self):  # init method for evety piece where it gets another ingame values assigned
         pass
 
-    def load_resources(self):
-
-        # global backgrounds, music_btn_rect, music_btn, cursor_default, close_btn, close_btn_rect, settings_btn, settings_btn_rect, minimize_btn, minimize_btn_rect
-
-        Game.backgrounds = []
-        for i in range(0, Game.BACKGROUNDS_AMOUNT):
-            bkg_img = pygame.image.load(f"resources\\images\\background{i}.png").convert()  # load some images, converts it for optimization and then scales them.
-            bkg_img = pygame.transform.smoothscale(bkg_img, (Game.width, Game.height))
-            Game.backgrounds.append(bkg_img)
-
-        cursor_default = pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha()
-        Game.cursor_default = pygame.transform.smoothscale(cursor_default, (Game.screen_height * 0.805 // 43, Game.screen_height // 43))
-        cursor_hand = pygame.image.load("resources\\icons\\cursor_hand.png").convert_alpha()
-        Game.cursor_hand = pygame.transform.smoothscale(cursor_hand, (Game.screen_height * 0.805 // 43, Game.screen_height // 43))
-
-        Game.x_btn_metrics = {"x": Game.height//0.58, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
-        x_btn = pygame.image.load("resources\\icons\\x.png").convert_alpha()
-        Game.x_btn = pygame.transform.smoothscale(x_btn, (Game.x_btn_metrics["w"], Game.x_btn_metrics["h"]))
-        Game.x_btn_rect = Game.x_btn.get_rect()
-        Game.x_btn_rect.topleft = (Game.x_btn_metrics["x"], Game.x_btn_metrics["y"])
-
-        Game.shrink_btn_metrics = {"x": Game.height//0.6, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
-        shrink_btn = pygame.image.load("resources\\icons\\shrink.png").convert_alpha()
-        Game.shrink_btn = pygame.transform.smoothscale(shrink_btn, (Game.shrink_btn_metrics["w"], Game.shrink_btn_metrics["h"]))
-        Game.shrink_btn_rect = Game.shrink_btn.get_rect()
-        Game.shrink_btn_rect.topleft = (Game.shrink_btn_metrics["x"], Game.shrink_btn_metrics["y"])
-
-        Game.minimize_btn_metrics = {"x": Game.height//0.62, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
-        minimize_btn = pygame.image.load("resources\\icons\\minimize.png").convert_alpha()
-        Game.minimize_btn = pygame.transform.smoothscale(minimize_btn, (Game.minimize_btn_metrics["w"], Game.minimize_btn_metrics["h"]))
-        Game.minimize_btn_rect = Game.minimize_btn.get_rect()
-        Game.minimize_btn_rect.topleft = (Game.minimize_btn_metrics["x"], Game.minimize_btn_metrics["y"])
-
-        Game.settings_btn_metrics = {"x": Game.height//0.655, "y": Game.height // 40, "w": Game.height // 24, "h": Game.height // 24}
-        settings_btn = pygame.image.load("resources\\icons\\setting.png").convert_alpha()
-        Game.settings_btn = pygame.transform.smoothscale(settings_btn, (Game.settings_btn_metrics["w"], Game.settings_btn_metrics["h"]))
-        Game.settings_btn_rect = Game.settings_btn.get_rect()
-        Game.settings_btn_rect.topleft = (Game.settings_btn_metrics["x"], Game.settings_btn_metrics["y"])
-
-        Game.music_btn_metrics = {"x": Game.height/0.78, "y": Game.height // 8, "w": Game.height // 28, "h": Game.height // 28}  # x coordinate, y coordinate, width measure, height measure
-        music_btn = pygame.image.load("resources\\icons\\music.png").convert_alpha()
-        Game.music_btn = pygame.transform.smoothscale(music_btn, (Game.music_btn_metrics["w"], Game.music_btn_metrics["h"]))
-        Game.music_btn_rect = Game.music_btn.get_rect()
-        Game.music_btn_rect.topleft = (Game.music_btn_metrics["x"], Game.music_btn_metrics["y"])
-
-        Game.rects_list = (Game.x_btn_rect,
-                           Game.music_btn_rect,
-                           Game.shrink_btn_rect,
-                           Game.minimize_btn_rect,
-                           Game.settings_btn_rect
-                           )
-
     def create_center_points(self):
         Game.center_points.clear()  # clean previous points (wrongly sized probably)
         square_size = Game.height/13.52
@@ -171,7 +119,7 @@ class Piece:
 
     pieces_ids = []
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):  # init method for evety piece where it gets another ingame values assigned
+    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):  # init method for evety piece where it gets another ingame values assigned
         self.max_hp = hp
         self.max_mana = mana
         self.team = team
@@ -186,7 +134,12 @@ class Piece:
             self.id = Piece.generate_id()
         else:
             self.id = specify_id
-        Piece.grid_pos_to_pixels(self, x, y, bypass_mana=True, change_mana=False)
+
+        if pos_mode == "grid":
+            Piece.grid_pos_to_pixels(self, x, y, bypass_mana=True, change_mana=False)
+        else:  # it should be "pixels"
+            self.pos_x = x
+            self.pos_y = y
 
         self.hp = hp
         self.mana = mana
@@ -370,72 +323,76 @@ class Piece:
 
 class Mage(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
+    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):
 
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
+        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id, pos_mode)
 
         self.specie = "mage"
 
         Mage.loadimages()
 
         if (team == "blue"):
-            self.original_image = Mage.blue_mage_image
-            # print(self.original_image)
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Mage.blue_mage_original_image
+            self.image = Mage.blue_mage_image
 
         else:
-            self.original_image = Mage.red_mage_image
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Mage.red_mage_original_image
+            self.image = Mage.red_mage_image
 
     def loadimages():
-        Mage.red_mage_image = Game.convert_img(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
-        Mage.blue_mage_image = Game.convert_img(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
+        Mage.red_mage_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
+        Mage.red_mage_image = Piece.smoothscale_images(Mage.red_mage_original_image)
+        Mage.blue_mage_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
+        Mage.blue_mage_image = Piece.smoothscale_images(Mage.blue_mage_original_image)
 
 
 class Archer(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
+    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):
+        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id, pos_mode)
 
         self.specie = "archer"
 
         Archer.loadimages()
 
         if (team == "blue"):
-            self.original_image = Archer.blue_archer_image
-            # print(self.original_image)
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Archer.blue_archer_original_image
+            self.image = Archer.blue_archer_image
 
         else:
-            self.original_image = Archer.red_archer_image
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Archer.red_archer_original_image
+            self.image = Archer.red_archer_image
 
     def loadimages():
-        Archer.red_archer_image = Game.convert_img(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
-        Archer.blue_archer_image = Game.convert_img(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
+        Archer.red_archer_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
+        Archer.red_archer_image = Piece.smoothscale_images(Archer.red_archer_original_image)
+        Archer.blue_archer_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
+        Archer.blue_archer_image = Piece.smoothscale_images(Archer.blue_archer_original_image)
 
 
 class Knight(Piece):
 
-    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None):
-        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id)
+    def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):
+        super().__init__(x, y, team, hp, mana, agility, defense, damage, specify_id, pos_mode)
 
         self.specie = "knight"
 
         Knight.loadimages()
 
         if (team == "blue"):
-            self.original_image = Knight.blue_knight_image
-            # print(self.original_image)
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Knight.blue_knight_original_image
+            self.image = Knight.blue_knight_image
 
         else:
-            self.original_image = Knight.red_knight_image
-            self.image = Piece.smoothscale_images(self.original_image)
+            self.original_image = Knight.red_knight_original_image
+            self.image = Knight.red_knight_image
 
     def loadimages():
-        Knight.red_knight_image = Game.convert_img(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
-        Knight.blue_knight_image = Game.convert_img(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
+        Knight.red_knight_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
+        Knight.red_knight_image = Piece.smoothscale_images(Knight.red_knight_original_image)
+
+        Knight.blue_knight_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
+        Knight.blue_knight_image = Piece.smoothscale_images(Knight.blue_knight_original_image)
 
 
 class UI:
@@ -498,6 +455,26 @@ class Menu:
 
                 slider.render()
                 # slider.display_value(self.app)
+
+
+class Piece_Selection_Menu:
+
+    already_executed = False
+
+    def __init__(self):
+
+        Piece_Selection_Menu.metrics = {"x": Game.height/0.693, "y": Game.height / 6.83, "w": Game.height / (1.6*2), "h": Game.height / 1.6}
+        Piece_Selection_Menu.original_image = pygame.image.load("resources\\images\\menu\\piece_selection_menu.png")
+        Piece_Selection_Menu.image = Media.convert(pygame.transform.smoothscale(Piece_Selection_Menu.original_image,
+                                                                                (Piece_Selection_Menu.metrics["w"], Piece_Selection_Menu.metrics["h"])), "alpha")
+
+        Piece_Selection_Menu.images_placement = [{"x": Game.height/0.66, "y": Game.height / 3.49},
+                                                 {"x": Game.height/0.66, "y": Game.height / 2.7},
+                                                 {"x": Game.height/0.66, "y": Game.height / 2.25}]
+
+    @staticmethod
+    def draw(my_team):
+        Game.screen.blit(Piece_Selection_Menu.image, (Piece_Selection_Menu.metrics["x"], Piece_Selection_Menu.metrics["y"]))
 
 
 class Slider:
@@ -564,7 +541,7 @@ class Turn_Btn:
     def __init__(self):
 
         Turn_Btn.metrics = {"x": Game.height/1, "y": Game.height / 1.4, "w": Game.height / (5/1.512), "h": Game.height / 5}
-        Turn_Btn.original_image = Media.convert_img(pygame.image.load("resources\\images\\menu\\turn_btn.png"), "alpha")
+        Turn_Btn.original_image = Media.convert(pygame.image.load("resources\\images\\menu\\turn_btn.png"), "alpha")
         Turn_Btn.image = pygame.transform.smoothscale(Turn_Btn.original_image, (Turn_Btn.metrics["w"], Turn_Btn.metrics["h"]))
         Turn_Btn.rect = Turn_Btn.image.get_rect()
         Turn_Btn.rect.topleft = (Turn_Btn.metrics["x"], Turn_Btn.metrics["y"])
@@ -580,8 +557,8 @@ class Mini_Flags:
     def __init__(self):
 
         Mini_Flags.metrics = {"x": Game.height/0.905, "y": Game.height / 1.137, "w": Game.height / 14, "h": Game.height / 14}
-        Mini_Flags.original_image_red = Media.convert_img(pygame.image.load("resources\\images\\flag_red.png"), "alpha")
-        Mini_Flags.original_image_blue = Media.convert_img(pygame.image.load("resources\\images\\flag_blue.png"), "alpha")
+        Mini_Flags.original_image_red = Media.convert(pygame.image.load("resources\\images\\flag_red.png"), "alpha")
+        Mini_Flags.original_image_blue = Media.convert(pygame.image.load("resources\\images\\flag_blue.png"), "alpha")
         Mini_Flags.image_red = pygame.transform.smoothscale(Mini_Flags.original_image_red, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
         Mini_Flags.image_blue = pygame.transform.smoothscale(Mini_Flags.original_image_blue, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
         Mini_Flags.rect = Mini_Flags.image_red.get_rect()
