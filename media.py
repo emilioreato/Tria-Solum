@@ -53,12 +53,6 @@ class Media:
         Media.backgrounds = []
         for bkg in Media.bare_backgrounds:
             Media.backgrounds.append(pygame.transform.smoothscale(bkg, (round(height*(16/9)), height)))
-        """Media.rects_list = (Media.x_btn_rect,
-                            Media.music_btn_rect,
-                            Media.shrink_btn_rect,
-                            Media.minimize_btn_rect,
-                            Media.settings_btn_rect
-                            )"""
 
     @staticmethod
     def convert(image, mode="default"):  # a function used to convert the images to the pygame format. you can choose between normal or alpha mode
@@ -69,3 +63,13 @@ class Media:
     @staticmethod
     def scale(image, size_x, size_y):
         return pygame.transform.smoothscale(image, (size_x, size_y))
+
+
+"""
+    Media.rects_list = (Media.x_btn_rect,
+                            Media.music_btn_rect,
+                            Media.shrink_btn_rect,
+                            Media.minimize_btn_rect,
+                            Media.settings_btn_rect
+                            )
+"""

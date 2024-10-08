@@ -301,7 +301,7 @@ class Piece:
         # pygame.draw.circle(screen, color, pos, self.rad)
 
     @staticmethod
-    def pov_based_pos_translation(x):  # it translated the coodinates of the enemie's pieces so you always see yours as the closest ones to the bottom of the screen, independently of the color.
+    def pov_based_pos_translation(x):  # it translated the coodinates of the enemy's pieces so you always see yours as the closest ones to the bottom of the screen, independently of the color.
         return abs(x-Game.board_size+1)  # it just inverts the board in x and y
 
     @staticmethod

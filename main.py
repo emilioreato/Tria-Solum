@@ -1,3 +1,18 @@
+import installer
+import os
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory # noqa
+
+
+def install_libraries():  # noqa
+    libraries_to_install = installer.Installer.check_libraries_installation_status("installation_status.txt")  # this 3 lines check if the needed modules are installed, if not it installs them # noqa
+    if libraries_to_install:  # noqa
+        installer.Installer.install_libraries_from_list(libraries_to_install, "installation_status.txt")  # noqa
+
+
+install_libraries()  # noqa
+
+
 import copy
 import pygame
 import time
@@ -14,15 +29,15 @@ import random
 import dev_mouse
 from online_utilities import firewall, online_tools, portforwarding
 import threading
-import installer
+
 from media import Media
+
 
 # SETING THINGS UP
 
 game = clases.Game()
 sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
 
 pygame.init()  # Inicializar Pygame
 pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
@@ -36,17 +51,8 @@ Media.resize(game.height)
 
 game.create_center_points()
 
-play_online = False
-my_team = "blue"
-
-
-def install_libraries():
-    libraries_to_install = installer.Installer.check_libraries_installation_status("installation_status.txt")  # this 3 lines check if the needed modules are installed, if not it installs them
-    if libraries_to_install:
-        installer.Installer.install_libraries_from_list(libraries_to_install, "installation_status.txt")
-
-
-install_libraries()
+play_online = True
+# my_team = "blue"
 
 
 def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
@@ -97,24 +103,21 @@ def assign_teams():  # this function assigns the teams to the players
 assign_teams()
 
 
+def assign_turn():
+    global current_turn
+    if (sckt.mode == "server"):
+        current_turn = random.choice(["blue", "red"])
+        sckt.send(current_turn, delimiter="")
+    else:
+        current_turn = sckt.recieve()
+
+
+assign_turn()
+
 time.sleep(0.5)
 print("creating pieces")
 reference_pieces = []
 active_pieces = []
-
-active_pieces += reference_pieces
-
-if play_online:
-    sckt.recieve()  # wait till we receive the confirmation of pieces being created
-
-if play_online:
-    sckt.send("Pieces have been chosen. Start.")
-    sckt.recieve()  # waits for the other player to catchup
-
-if play_online:
-    for piece in reference_pieces:  # sends the comand to create your chosen pieces in the enemie active_pieces list
-        sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
-
 
 # GENERAL VARIABLES
 
@@ -137,8 +140,6 @@ selected_background = 0  # backgrounds related variables
 
 music_pause_state = False  # audio related variables
 current_volume = 0.5
-global current_turn
-current_turn = random.choice(["blue", "red"])
 
 
 clases.UI.init()
@@ -173,7 +174,7 @@ def receive_messages():  # This function receives messages from the server while
                             piece.grid_pos_to_pixels(clases.Piece.pov_based_pos_translation(int(args[2])), clases.Piece.pov_based_pos_translation(int(args[3])), bypass_mana=False, change_mana=True)
                 case "turn":
                     change_turn()
-                case "created":  # specie-x-y-team-hp-mana-agility-defense-damage-id. thats the format this case expects to receive, all the arguments to create a new piece which is going to be exactly the same as the one our enemie created
+                case "created":  # specie-x-y-team-hp-mana-agility-defense-damage-id. thats the format this case expects to receive, all the arguments to create a new piece which is going to be exactly the same as the one our enemy created
                     p_specie = args[1]
                     p_x = clases.Piece.pov_based_pos_translation(int(args[2]))
                     p_y = clases.Piece.pov_based_pos_translation(int(args[3]))
@@ -203,7 +204,7 @@ def receive_messages():  # This function receives messages from the server while
                     global selected_piece
                     selected_piece = None
                 case "exit":
-                    print("the enemie has abandoned the game")
+                    print("the enemy has abandoned the game")
 
 
 def finish_program():  # this function closes the program
@@ -458,6 +459,7 @@ while True:  # Main loop
             if event.button == 1:
 
                 if follow_mouse:  # if we were moving a piece
+
                     follow_mouse = False
 
                     sound_player.play_sfx(sound_player.SFX[5])
@@ -474,6 +476,15 @@ while True:  # Main loop
                     print(string_we_send)
                     if (play_online):
                         sckt.send(string_we_send)  # "moved":  # [id]-[x]-[y]
+
+                    if active_uis["piece_selection"] and (len(active_pieces) >= 3):
+                        active_uis["piece_selection"] = False
+
+                        if play_online:
+                            sckt.send("Pieces have been chosen. Start.")
+                            sckt.recieve()  # waits for the other player to catchup
+                            for piece in active_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
+                                sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed
             if (pygame.key.name(event.key) == "t" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
