@@ -21,15 +21,15 @@ import sys
 import pygame_gui
 import os
 import pyautogui
-from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality
+# from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality
 import clases
 import ctypes
 import math
 import random
 import dev_mouse
-from online_utilities import firewall, online_tools, portforwarding
 import threading
 
+from online_utilities import firewall, online_tools, portforwarding
 from media import Media
 
 
@@ -56,7 +56,7 @@ time.sleep(0.05)
 # GENERAL VARIABLES
 
 active_uis = {
-    "lobby": True,
+    "lobby": False,
     "piece_selection": True,
     "ingame": False,
     "settings": False,
@@ -67,8 +67,8 @@ my_pieces = []
 reference_pieces = []
 active_pieces = []
 
-play_online = True
-# my_team = "blue"
+play_online = False
+my_team = "blue"
 
 global selected_piece
 selected_piece = None
@@ -89,6 +89,7 @@ piece_selection_menu = clases.Piece_Selection_Menu()
 config_menu = clases.Menu()
 turn_btn = clases.Turn_Btn()
 mini_flag = clases.Mini_Flags()
+lobby = clases.Lobby()
 
 
 # USEFUL FUNCTIONS
@@ -215,15 +216,15 @@ if (play_online):
 
 def assign_turn():
     global current_turn
-    if (sckt.mode == "server"):
-        current_turn = random.choice(["blue", "red"])
-        sckt.send(current_turn, delimiter="")
-    else:
-        current_turn = sckt.recieve()
+    current_turn = random.choice(["blue", "red"])
+    if play_online:
+        if (sckt.mode == "server"):
+            sckt.send(current_turn, delimiter="")
+        else:
+            current_turn = sckt.recieve()
 
 
-if play_online:
-    assign_turn()
+assign_turn()
 
 
 def finish_program():  # this function closes the program
@@ -301,16 +302,15 @@ def draw():
     if (ite0 == 400 and active_uis["ingame"]):
         print("wow", len(active_pieces))
 
+    if active_uis["lobby"]:
+        lobby.draw()
+    if active_uis["settings"]:
+        config_menu.run(show_music=True)
+
     game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
     game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
     game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
     game.screen.blit(Media.sized["setting_btn"], (Media.metrics["setting_btn"]["x"], Media.metrics["setting_btn"]["y"]))
-
-    # for i in game.center_points:
-    #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
-
-    if active_uis["settings"]:
-        config_menu.run(show_music=True)
 
     if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
         if piece_selection_menu.already_executed == False:
@@ -334,6 +334,9 @@ def draw():
 
     if show_cursor_image:  # displaying cursor
         game.screen.blit(cursor, pygame.mouse.get_pos())
+
+    # for i in game.center_points:
+    #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
     pygame.display.flip()  # update the screen. /    .update() also works
 
@@ -510,9 +513,10 @@ while True:  # Main loop
                                         break
                                 for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
                                     sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
+
+                                print("BEGGINING SECULARRRRRRRR")
+                                threading.Thread(target=receive_messages, daemon=True).start()
                             my_pieces = {}
-                            print("BEGGINING SECULARRRRRRRR")
-                            threading.Thread(target=receive_messages, daemon=True).start()
                             active_uis["ingame"] = True
 
         elif event.type == pygame.KEYDOWN:  # if a key was pressed

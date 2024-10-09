@@ -569,3 +569,13 @@ class Mini_Flags:
             Game.screen.blit(Mini_Flags.image_blue, Mini_Flags.rect)
         else:
             Game.screen.blit(Mini_Flags.image_red, Mini_Flags.rect)
+
+
+class Lobby:
+
+    def __init__(self):
+        pass
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (Media.metrics["lobby_background"]["x"], Media.metrics["lobby_background"]["y"]))

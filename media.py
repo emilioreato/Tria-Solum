@@ -22,6 +22,8 @@ class Media:
             "minimize_btn": pygame.image.load("resources\\icons\\minimize.png").convert_alpha(),
             "setting_btn": pygame.image.load("resources\\icons\\setting.png").convert_alpha(),
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
+
+            "lobby_background": pygame.image.load("resources\\images\\menu\\lobby.png").convert_alpha(),
         }
 
         Media.resize_metrics(height)
@@ -35,7 +37,9 @@ class Media:
             "shrink_btn": {"x": height//0.6, "y": height // 40, "w": height // 24, "h": height // 24},
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24},
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24},
-            "music_btn": {"x": height//0.66, "y": height // 40, "w": height // 24, "h": height // 24},
+            "music_btn": {"x": height/0.78, "y": height / 8, "w": height / 28, "h": height / 28},
+
+            "lobby_background": {"x": height / 2 - (height / 2.4)*(16/9), "y":  height / 2 - (height / 2.4), "w": (height / 1.2)*(16/9), "h": height / 1.2, "make_rect": False},
         }
 
     def resize(height):
