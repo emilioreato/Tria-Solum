@@ -13,6 +13,7 @@ def install_libraries():  # noqa
 install_libraries()  # noqa
 
 
+from pygame.locals import *
 import copy
 import pygame
 import time
@@ -20,14 +21,14 @@ import numpy
 import sys
 import pygame_gui
 import os
-import pyautogui
-# from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality
+import pyautogui  # from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality # noqa
 import clases
 import ctypes
 import math
 import random
 import dev_mouse
 import threading
+import cv2
 
 from online_utilities import firewall, online_tools, portforwarding
 from media import Media
@@ -40,15 +41,13 @@ sound_player = clases.Sound()  # creating an instance of the sound class to play
 
 pygame.init()  # Inicializar Pygame
 pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
-pygame.mixer.music.set_volume(0.4)
+pygame.mixer.music.set_volume(0.6)
 
 game.set_up_window(1.4)
-clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
-Media.load_media(game.height)
-Media.resize(game.height)
 
-game.create_center_points()
+intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
+              "audio": "resources\\intro\\intro_audio.mp3"}
 
 
 time.sleep(0.05)
@@ -56,6 +55,7 @@ time.sleep(0.05)
 # GENERAL VARIABLES
 
 active_uis = {
+    "intro": True,
     "lobby": False,
     "piece_selection": True,
     "ingame": False,
@@ -76,7 +76,6 @@ selected_piece = None
 follow_mouse = False
 shrink_state = False
 show_cursor_image = True
-cursor = Media.sized["cursor_default"]
 
 selected_background = 0  # backgrounds related variables
 
@@ -93,6 +92,17 @@ lobby = clases.Lobby()
 
 
 # USEFUL FUNCTIONS
+
+def setup():
+    clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
+
+    Media.load_media(game.height)
+    Media.resize(game.height)
+
+    game.create_center_points()
+    global cursor
+    cursor = Media.sized["cursor_default"]
+
 
 def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
     global port
@@ -227,6 +237,51 @@ def assign_turn():
 assign_turn()
 
 
+def play_intro_video():
+
+    cap = cv2.VideoCapture(intro_path["video"])
+
+    fps = cap.get(cv2.CAP_PROP_FPS)  # Obtener la tasa de frames del video
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    video_clock = pygame.time.Clock()
+
+    start_time = time.time()
+
+    while cap.isOpened():
+
+        ret, frame = cap.read()  # Leer el siguiente frame
+
+        if ret:
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convertir el frame de OpenCV (BGR) a RGB para Pygame
+            frame = cv2.resize(frame, (game.width, game.height))  # Ajustar el tamaño
+
+            frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0, 1))  # Convertir a una superficie de Pygame
+
+            game.screen.blit(frame_surface, (0, 0))
+
+            pygame.display.update()
+
+            elapsed_time = time.time() - start_time
+            current_frame = int(elapsed_time * fps)
+
+            # Terminar el bucle si se ha llegado al final del video
+            if current_frame >= total_frames:
+                break
+
+        video_clock.tick(fps+fps*0.01)  # I needed just a little bit more of extra delay
+
+    cap.release()
+    active_uis["intro"] = False
+
+
+def play_intro_audio():
+    pygame.mixer.music.load(intro_path["audio"])
+    pygame.mixer.music.play()
+
+
 def finish_program():  # this function closes the program
     global running
     running = False  # in case some thread ends up in the main "while" loop you make sure it stops anyways
@@ -328,9 +383,15 @@ def draw():
     mini_flag.draw(current_turn)
     turn_btn.draw()
 
+    my_team_count = 0
+    enemy_count = 0
     for piece in active_pieces:    # displaying all pieces
+        if piece.team == my_team:
+            my_team_count += 1
+        else:
+            enemy_count += 1
         piece.draw(game.screen, piece.image)
-        piece.draw_health_bar(game.screen, active_pieces.index(piece), my_team, piece.team)
+        piece.draw_health_bar(my_team, my_team_count, enemy_count)
 
     if show_cursor_image:  # displaying cursor
         game.screen.blit(cursor, pygame.mouse.get_pos())
@@ -345,14 +406,27 @@ def stopmusic():
     pygame.mixer.quit()  # close the pygame mixer
 
 
-if play_online:
-    pass
-    # threading.Thread(target=receive_messages, daemon=True).start()  # created the thread that constantly looks for new messages
-
 # varibles needed to control fps
 start_time = time.time()  # Record the starting time
 loop_count = 0
 
+if active_uis["intro"]:
+    # THE INTRO VIDEO IS PLAYED WHILE SETTING OTHER "HEAVY" THINGS UP
+    video_t = threading.Thread(target=play_intro_video)
+    audio_t = threading.Thread(target=play_intro_audio)
+    video_t.start()
+    audio_t.start()
+
+    # SETTING SOME THINGS
+    setup()
+
+    # ONCE IT FINISHES LOADING EVERYTHING IT WAITS FOR THE VIDEO TO END
+    while active_uis["intro"] == True:
+        time.sleep(0.05)
+    active_uis["lobby"] = True  # now it is on lobby menu
+    pygame.mixer.music.set_volume(0.4)
+else:
+    setup()
 
 # this variables "ite" just count how many repetitions the loop has made and when some event should be analized
 ite0 = 0

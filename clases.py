@@ -56,7 +56,7 @@ class Game:
 
         pygame.display.set_caption("Gambit Game 2024®")  # set a window title
 
-        pygame.display.set_icon(pygame.image.load("resources\\images\\indicator.png").convert_alpha())  # sets window icon
+        pygame.display.set_icon(pygame.image.load("resources\\icons\\icon.png").convert_alpha())  # sets window icon
 
         Game.timer = pygame.time.Clock()  # create a clock object to set fps
         Game.dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
@@ -119,6 +119,11 @@ class Piece:
 
     pieces_ids = []
 
+    health_color = (170, 0, 10)
+    health_background_color = (30, 0, 0)
+    mana_color = (224, 159, 7)
+    mana_background_color = (74, 52, 0)
+
     def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):  # init method for evety piece where it gets another ingame values assigned
         self.max_hp = hp
         self.max_mana = mana
@@ -167,45 +172,44 @@ class Piece:
     def attack(self, atacked_piece):
         atacked_piece.modify_hp(0 - self.damage)
 
-    def draw_health_bar(self, screen, index, my_team, team):
+    def draw_health_bar(self, my_team, my_team_count, enemy_count):
 
-        bar_width = 300
-        bar_height = 30
-        # Calcula la longitud de la barra de vida en función del porcentaje de vida
-        health_percentage = self.hp / self.max_hp
+        bar_width = Game.height/6.4
+        bar_height = Game.height/64
+
+        health_percentage = self.hp / self.max_hp  # Calcula la longitud de la barra de vida en función del porcentaje de vida
         health_bar_length = int(bar_width * health_percentage)
 
-        # Posición de la barra (ajusta según tu diseño)
-        # Colores para la barra de vida (verde y rojo)
-        health_color = (170, 0, 10)  # Verde para la vida restante
-        background_color = (30, 0, 0)  # Rojo para la vida perdida
+        mana_percentage = self.mana / self.max_mana  # Calcula la longitud de la barra de vida en función del porcentaje de vida
+        mana_bar_length = int(bar_width * mana_percentage)
 
         bar_x = (Game.width/16.991)  # Mueve un poco la barra a la izquierda de la pieza
-        if team == my_team:
+        if self.team == my_team:
+
             bar_y = (Game.height/1.095)  # Ajusta para colocar la barra debajo de la pieza
-            bar_y = bar_y - index * 75
+            bar_y = bar_y - my_team_count * 75
         else:
+
             bar_y = (Game.height/22)
-            bar_y = bar_y + index * 75 - Game.height/6
+            bar_y = bar_y + enemy_count * 75 - Game.height/6
 
-        pygame.draw.rect(screen, background_color, (bar_x, bar_y, bar_width, bar_height))
+        Game.screen.blit(Media.scale(self.original_image, Game.height/20, Game.height/20), (Game.width/16.991, bar_y))
+        pygame.draw.rect(Game.screen, self.health_color, (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x, bar_y, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
 
-        # Dibuja la barra de vida restante (verde)
-        pygame.draw.rect(screen, health_color, (bar_x, bar_y, health_bar_length, bar_height))
+        pygame.draw.rect(Game.screen, self.mana_color, (bar_x, bar_y+bar_height, bar_width, bar_height))
+        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x, bar_y+bar_height, mana_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
 
-    @classmethod
+    @ classmethod
     def set_dimension(cls, mult=1, screenratio=1):
-        # if Piece.pieces_dimension 0:
-        # _, screen_height = pyautogui.size()  # gets the current resolution
-        # height = round(screen_height/screenratio)  # reduces the height
         cls.pieces_dimension = round((Game.height // 14) / mult)
         print("pieces_dimension:", cls.pieces_dimension)
 
-    @staticmethod
+    @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
         return index % Game.board_size, index // Game.board_size
 
-    @staticmethod
+    @ staticmethod
     def grid_to_b64index(x, y):  # it returns the opposite conversion of b64index_to_grid. given 2d array coordinates it converts them to a 1d array coordinate
         return y*Game.board_size + x
 
@@ -241,14 +245,14 @@ class Piece:
             self.pos_x, self.pos_y = Game.center_points[Piece.grid_to_b64index(self.grid_pos_x, self.grid_pos_y)]
             return None, None, None, None
 
-    @staticmethod
+    @ staticmethod
     def check_for_pieces_in_the_grid_coordinates(active_pieces, x, y):
         for piece in active_pieces:
             if (piece.grid_pos_x == x and piece.grid_pos_y == y):
                 return True
         return False
 
-    @staticmethod
+    @ staticmethod
     def detect_closest_point(mouse_pos):  # AKA transform pixels position to grid placement (opposite of grid_pos_to_pixels())
         lowest = 10000
         for point in Game.center_points:  # iterate every point
@@ -261,7 +265,7 @@ class Piece:
 
         return Game.center_points.index(selected_point)  # return the position(index) in the points array of the closest point
 
-    @staticmethod
+    @ staticmethod
     def get_amount_of_grid_move(old_x, old_y, new_x, new_y):  # it is used to calculate mana variation
 
         movement_on_x = abs(new_x-old_x)
@@ -300,22 +304,22 @@ class Piece:
             screen.blit(img, (self.pos_x-Piece.pieces_dimension//2, self.pos_y-Piece.pieces_dimension//2))
         # pygame.draw.circle(screen, color, pos, self.rad)
 
-    @staticmethod
+    @ staticmethod
     def pov_based_pos_translation(x):  # it translated the coodinates of the enemy's pieces so you always see yours as the closest ones to the bottom of the screen, independently of the color.
         return abs(x-Game.board_size+1)  # it just inverts the board in x and y
 
-    @staticmethod
+    @ staticmethod
     def is_clicked(mouse_pos, pos):
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
         return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
 
-    @staticmethod
+    @ staticmethod
     def resize(active_pieces):
         for piece in active_pieces:
             piece.grid_pos_to_pixels(piece.grid_pos_x, piece.grid_pos_y, change_mana=False, bypass_mana=True, update_variables=True)
             piece.image = Piece.smoothscale_images(piece.original_image)
 
-    @staticmethod
+    @ staticmethod
     def smoothscale_images(image_to_scale):
         # print(image_to_scale)
         return pygame.transform.smoothscale(image_to_scale, (Piece.pieces_dimension, Piece.pieces_dimension))
@@ -340,9 +344,9 @@ class Mage(Piece):
             self.image = Mage.red_mage_image
 
     def loadimages():
-        Mage.red_mage_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
+        Mage.red_mage_original_image = Media.convert(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
         Mage.red_mage_image = Piece.smoothscale_images(Mage.red_mage_original_image)
-        Mage.blue_mage_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
+        Mage.blue_mage_original_image = Media.convert(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
         Mage.blue_mage_image = Piece.smoothscale_images(Mage.blue_mage_original_image)
 
 
@@ -364,9 +368,9 @@ class Archer(Piece):
             self.image = Archer.red_archer_image
 
     def loadimages():
-        Archer.red_archer_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
+        Archer.red_archer_original_image = Media.convert(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
         Archer.red_archer_image = Piece.smoothscale_images(Archer.red_archer_original_image)
-        Archer.blue_archer_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
+        Archer.blue_archer_original_image = Media.convert(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
         Archer.blue_archer_image = Piece.smoothscale_images(Archer.blue_archer_original_image)
 
 
@@ -388,11 +392,13 @@ class Knight(Piece):
             self.image = Knight.red_knight_image
 
     def loadimages():
-        Knight.red_knight_original_image = Game.convert_img(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
+        Knight.red_knight_original_image = Media.convert(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
         Knight.red_knight_image = Piece.smoothscale_images(Knight.red_knight_original_image)
 
-        Knight.blue_knight_original_image = Game.convert_img(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
+        Knight.blue_knight_original_image = Media.convert(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
         Knight.blue_knight_image = Piece.smoothscale_images(Knight.blue_knight_original_image)
+
+        # Knight.blue_knight_bar_image = Media.scale(Knight.blue_knight_original_image, Game.height/20,Game.height/20)
 
 
 class UI:
@@ -472,7 +478,7 @@ class Piece_Selection_Menu:
                                                  {"x": Game.height/0.66, "y": Game.height / 2.7},
                                                  {"x": Game.height/0.66, "y": Game.height / 2.25}]
 
-    @staticmethod
+    @ staticmethod
     def draw(my_team):
         Game.screen.blit(Piece_Selection_Menu.image, (Piece_Selection_Menu.metrics["x"], Piece_Selection_Menu.metrics["y"]))
 
