@@ -72,11 +72,17 @@ class Sound:
     SFX = [os.path.join("resources\\sounds\\sfx", archivo)  # This list contains all the paths of the sfx files
            for archivo in os.listdir("resources\\sounds\\sfx")]
 
+    UI_SONGS = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ui" on their name, aka, soundtrack files for the matches
+                for archivo in os.listdir("resources\\sounds\\soundtracks")
+                if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ui" in archivo.lower()]
+
     PLAYLIST = [os.path.join("resources\\sounds\\soundtracks", archivo)  # This list contains all the paths that contain "ingame" on their name, aka, soundtrack files for the matches
                 for archivo in os.listdir("resources\\sounds\\soundtracks")
                 if os.path.isfile(os.path.join("resources\\sounds\\soundtracks", archivo)) and "ingame" in archivo.lower()]
 
     generated_tracks = []
+
+    file = None
 
     def __init__(self):
         pass
@@ -90,8 +96,7 @@ class Sound:
         sfx_channel.play(sound_effect)  # Reproducir el efecto en el canal
 
     @staticmethod
-    def play_song_on_thread(file):  # execute the playing of the sound in a thread so the main program doesnt get blocked
-        Sound.file = file
+    def play_song_on_thread():  # execute the playing of the sound in a thread so the main program doesnt get blocked
         threading.Thread(target=Sound.play_song).start()
 
     @staticmethod
@@ -584,4 +589,32 @@ class Lobby:
 
     def draw(self):
 
-        Game.screen.blit(Media.sized["lobby_background"], (Media.metrics["lobby_background"]["x"], Media.metrics["lobby_background"]["y"]))
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+        Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
+        Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
+
+        Game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
+        Game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
+        Game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
+        Game.screen.blit(Media.sized["setting_btn"], (Media.metrics["setting_btn"]["x"], Media.metrics["setting_btn"]["y"]))
+
+        # print(Cursor.show_cursor)
+        if Cursor.show_cursor:
+            Cursor.draw()
+
+        pygame.display.flip()
+
+
+class Cursor:
+
+    show_cursor = True
+
+    image = None
+
+    def __init__(self):
+        Cursor.image = Media.sized["cursor_default"]
+
+    @staticmethod
+    def draw():
+        Game.screen.blit(Cursor.image, pygame.mouse.get_pos())

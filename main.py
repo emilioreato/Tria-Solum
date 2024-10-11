@@ -36,28 +36,21 @@ from media import Media
 
 # SETING THINGS UP
 
+
+pygame.init()  # initialize pygame
 game = clases.Game()
-sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
-
-pygame.init()  # Inicializar Pygame
-pygame.mixer.init()  # Inicializar el mixer para audios de Pygame
-pygame.mixer.music.set_volume(0.6)
-
 game.set_up_window(1.4)
 
 
-intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
-              "audio": "resources\\intro\\intro_audio.mp3"}
-
-
-time.sleep(0.05)
-
 # GENERAL VARIABLES
+
+play_online = False
+my_team = "blue"
 
 active_uis = {
     "intro": True,
     "lobby": False,
-    "piece_selection": True,
+    "piece_selection": False,
     "ingame": False,
     "settings": False,
     "chat": False,
@@ -67,41 +60,42 @@ my_pieces = []
 reference_pieces = []
 active_pieces = []
 
-play_online = False
-my_team = "blue"
-
-global selected_piece
 selected_piece = None
+
+current_turn = None
 
 follow_mouse = False
 shrink_state = False
-show_cursor_image = True
 
 selected_background = 0  # backgrounds related variables
 
 music_pause_state = False  # audio related variables
 current_volume = 0.5
 
-
-clases.UI.init()
-piece_selection_menu = clases.Piece_Selection_Menu()
-config_menu = clases.Menu()
-turn_btn = clases.Turn_Btn()
-mini_flag = clases.Mini_Flags()
-lobby = clases.Lobby()
+intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
+              "audio": "resources\\intro\\intro_audio.mp3"}
 
 
 # USEFUL FUNCTIONS
 
 def setup():
+    global piece_selection_menu, config_menu, turn_btn, mini_flag, lobby, sound_player, cursor
+    clases.UI.init()
+    piece_selection_menu = clases.Piece_Selection_Menu()
+    config_menu = clases.Menu()
+    turn_btn = clases.Turn_Btn()
+    mini_flag = clases.Mini_Flags()
+    lobby = clases.Lobby()
+    sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
+
     clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
 
     Media.load_media(game.height)
     Media.resize(game.height)
 
     game.create_center_points()
-    global cursor
-    cursor = Media.sized["cursor_default"]
+
+    cursor = clases.Cursor()
 
 
 def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
@@ -127,10 +121,6 @@ def set_up_online():  # this function sets up the server and client objects as a
         sckt = online_tools.Server()
         print("La clave de tu partida es:", online_tools.Online.get_public_ip())
         sckt.set_up_server(port)
-
-
-if play_online:
-    set_up_online()
 
 
 def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
@@ -220,10 +210,6 @@ def assign_teams():  # this function assigns the teams to the players
             my_team = "blue"
 
 
-if (play_online):
-    assign_teams()
-
-
 def assign_turn():
     global current_turn
     current_turn = random.choice(["blue", "red"])
@@ -232,9 +218,6 @@ def assign_turn():
             sckt.send(current_turn, delimiter="")
         else:
             current_turn = sckt.recieve()
-
-
-assign_turn()
 
 
 def play_intro_video():
@@ -335,16 +318,13 @@ def get_at_with_sound(rect, relative_pos):  # the same as collidepoint_with_soun
 
 
 def set_mouse_usage(visible=False, grab=True):
-    global show_cursor_image
     if visible:
-        show_cursor_image = False
+        clases.Cursor.show_cursor = False
     else:
-        show_cursor_image = True
+        clases.Cursor.show_cursor = True
     pygame.mouse.set_visible(visible)  # both needed for set mouse in virtual mode
     pygame.event.set_grab(grab)
 
-
-set_mouse_usage(True, False)
 
 UI_REFRESH_RATE = game.timer.tick(game.dev_mode.DisplayFrequency)/1000
 manager = pygame_gui.UIManager((game.width, game.height))
@@ -393,8 +373,8 @@ def draw():
         piece.draw(game.screen, piece.image)
         piece.draw_health_bar(my_team, my_team_count, enemy_count)
 
-    if show_cursor_image:  # displaying cursor
-        game.screen.blit(cursor, pygame.mouse.get_pos())
+    if clases.Cursor.show_cursor:  # displaying cursor
+        cursor.draw()
 
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
@@ -411,6 +391,8 @@ start_time = time.time()  # Record the starting time
 loop_count = 0
 
 if active_uis["intro"]:
+    pygame.mixer.init()
+    pygame.mixer.music.set_volume(0.6)
     # THE INTRO VIDEO IS PLAYED WHILE SETTING OTHER "HEAVY" THINGS UP
     video_t = threading.Thread(target=play_intro_video)
     audio_t = threading.Thread(target=play_intro_audio)
@@ -423,10 +405,19 @@ if active_uis["intro"]:
     # ONCE IT FINISHES LOADING EVERYTHING IT WAITS FOR THE VIDEO TO END
     while active_uis["intro"] == True:
         time.sleep(0.05)
-    active_uis["lobby"] = True  # now it is on lobby menu
     pygame.mixer.music.set_volume(0.4)
 else:
+    pygame.mixer.init()
+    pygame.mixer.music.set_volume(0.4)
     setup()
+set_mouse_usage(False, True)
+active_uis["lobby"] = True
+
+for song in sound_player.UI_SONGS:  # plays and specefically selects the song that should be played in the lobby
+    if "track10" in song:
+        pygame.mixer.music.load(song)  # loads the track
+        pygame.mixer.music.play()  # plays the track
+        break
 
 # this variables "ite" just count how many repetitions the loop has made and when some event should be analized
 ite0 = 0
@@ -436,12 +427,11 @@ ite2 = 0
 init_time = time.time()  # saves the time when the loop was entered
 while True:  # Main loop
 
-    # checks if its due to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
-    if (ite0 >= 600 or (ite0 == 0 and time.time()-init_time < 20)):
+    if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
         if not music_pause_state:  # you also have to check if the music is not paused
             ite0 = 0
             if not pygame.mixer.music.get_busy():
-                clases.Sound.play_song_on_thread(sound_player.PLAYLIST)
+                sound_player.play_song_on_thread()
 
     if follow_mouse:  # when you are moving a piece you want it to follow your mouse, so you update the piece position to be exactly the same as your mouse's
         if selected_piece != None:
@@ -450,13 +440,25 @@ while True:  # Main loop
     for event in pygame.event.get():  # manage events
 
         if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
-            if (ite1 >= 15):
+            if (ite1 >= 12):
                 ite1 = 0
-                cursor = Media.sized["cursor_default"]
-                for rect in Media.rects.values():
-                    if rect.collidepoint(event.pos):  # check if every btn was hovered
-                        cursor = Media.sized["cursor_hand"]
-                        break
+                clases.Cursor.image = Media.sized["cursor_default"]
+                for values in Media.rects.values():
+                    rect = values["rect"]
+                    use_in = values["use_rect_in"]
+
+                    if type(use_in) == list:    # if the btn is used in multiple uis, it checks if the current ui is active then checks if the btn is being hovered and if it is, it changes the cursor image to a hand
+                        for possible_use in use_in:
+                            print(possible_use)
+                            if possible_use == "all" or active_uis[possible_use] == True:
+                                if rect.collidepoint(event.pos):  # check if every btn was hovered
+                                    clases.Cursor.image = Media.sized["cursor_hand"]
+                                    break
+                    else:
+                        if use_in == "all" or active_uis[use_in] == True:
+                            if rect.collidepoint(event.pos):  # check if every btn was hovered
+                                clases.Cursor.image = Media.sized["cursor_hand"]
+                                break
 
             if (ite2 >= 8):
                 ite2 = 0
@@ -494,9 +496,9 @@ while True:  # Main loop
                             sckt.send("turn")
                         print("changed turn")
 
-                if collidepoint_with_sound(Media.rects["x_btn"], event.pos):  # check if btn was clicked
+                if collidepoint_with_sound(Media.rects["x_btn"]["rect"], event.pos):  # check if btn was clicked
                     finish_program()
-                elif collidepoint_with_sound(Media.rects["shrink_btn"], event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clicked
                     shrink_state = not shrink_state  # pulsator to conmutator logic
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so its position can be changed
 
@@ -521,11 +523,19 @@ while True:  # Main loop
                         clases.Piece.resize(active_pieces)
                         set_mouse_usage(False, True)
                         break
-                elif collidepoint_with_sound(Media.rects["minimize_btn"], event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["minimize_btn"]["rect"], event.pos):  # check if btn was clicked
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
                     window.minimize()  # minimize the window
-                elif collidepoint_with_sound(Media.rects["setting_btn"], event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
                     active_uis["settings"] = not active_uis["settings"]
+                elif collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
+                    active_uis["ingame"] = True
+                    if play_online:
+                        set_up_online()
+                    if (play_online):
+                        assign_teams()
+                    assign_turn()
+                    active_uis["lobby"] = False
 
                 if active_uis["piece_selection"]:
                     for ref_piece in reference_pieces:  # Checks if any piece was clicked
@@ -545,7 +555,7 @@ while True:  # Main loop
                             break
 
             elif event.button == 3:
-                if Media.rects["music_btn"].collidepoint(event.pos):  # check if btn was clicked
+                if Media.rects["music_btn"]["rect"].collidepoint(event.pos):  # check if btn was clicked
                     music_pause_state = not music_pause_state
                     if music_pause_state:
                         pygame.mixer.music.pause()
@@ -588,7 +598,6 @@ while True:  # Main loop
                                 for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
                                     sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
 
-                                print("BEGGINING SECULARRRRRRRR")
                                 threading.Thread(target=receive_messages, daemon=True).start()
                             my_pieces = {}
                             active_uis["ingame"] = True
@@ -626,7 +635,10 @@ while True:  # Main loop
         elif event.type == pygame.QUIT:
             finish_program()
 
-    draw()
+    if active_uis["ingame"]:
+        draw()
+    elif active_uis["lobby"]:
+        lobby.draw()
 
     ite0 += 1  # iterator used to control events
     ite1 += 1
