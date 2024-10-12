@@ -120,8 +120,6 @@ class Sound:
 
 class Piece:
 
-    pieces_dimension = 0
-
     pieces_ids = []
 
     health_color = (170, 0, 10)
@@ -198,17 +196,20 @@ class Piece:
             bar_y = (Game.height/22)
             bar_y = bar_y + enemy_count * 75 - Game.height/6
 
-        Game.screen.blit(Media.scale(self.original_image, Game.height/20, Game.height/20), (Game.width/16.991, bar_y))
-        pygame.draw.rect(Game.screen, self.health_color, (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x, bar_y, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
+        Game.screen.blit(Media.specific_copies[self.team+"_"+self.specie+"_bar"], (Game.width/19, bar_y))
 
-        pygame.draw.rect(Game.screen, self.mana_color, (bar_x, bar_y+bar_height, bar_width, bar_height))
-        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x, bar_y+bar_height, mana_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
+        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(Game.screen, self.health_color, (bar_x, bar_y, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
 
-    @ classmethod
+        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x, bar_y+bar_height, bar_width, bar_height/2))
+        pygame.draw.rect(Game.screen, self.mana_color, (bar_x, bar_y+bar_height, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
+
+        Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
+
+    """@ classmethod
     def set_dimension(cls, mult=1, screenratio=1):
         cls.pieces_dimension = round((Game.height // 14) / mult)
-        print("pieces_dimension:", cls.pieces_dimension)
+        print("pieces_dimension:", cls.pieces_dimension)"""
 
     @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
@@ -293,20 +294,17 @@ class Piece:
 
         if (limited_x != None):
 
-            # print(Piece.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
-
-            if change_mana:
+            if change_mana:  # print(Piece.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y))
                 if self.mana > 0:
                     self.mana -= Piece.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y)
                     # print(old_x, old_y, limited_x, limited_y, self.get_amount_of_grid_move(old_x, old_y, limited_x, limited_y), self.mana)
 
     def draw(self, screen, img, pos=0):
-        # print(self.pos_x, self.pos_y)
 
         if pos:
-            screen.blit(img, (pos[0]-Piece.pieces_dimension//2, pos[1]-Piece.pieces_dimension//2))
+            screen.blit(img, (pos[0]-Media.pieces_size//2, pos[1]-Media.pieces_size//2))
         else:
-            screen.blit(img, (self.pos_x-Piece.pieces_dimension//2, self.pos_y-Piece.pieces_dimension//2))
+            screen.blit(img, (self.pos_x-Media.pieces_size//2, self.pos_y-Media.pieces_size//2))
         # pygame.draw.circle(screen, color, pos, self.rad)
 
     @ staticmethod
@@ -314,20 +312,15 @@ class Piece:
         return abs(x-Game.board_size+1)  # it just inverts the board in x and y
 
     @ staticmethod
-    def is_clicked(mouse_pos, pos):
+    def is_clicked(mouse_pos, pos, mult=1):  # to check if a piece was clicked (works for general circles as well)
         distancia = ((pos[0] - mouse_pos[0]) ** 2 + (pos[1] - mouse_pos[1]) ** 2) ** 0.5  # Calcular la distancia entre el cli
-        return distancia <= Piece.pieces_dimension//2  # Devuelve True si el clic está dentro del círculo
+        return distancia <= (Media.pieces_size*mult)//2  # Devuelve True si el clic está dentro del círculo
 
     @ staticmethod
     def resize(active_pieces):
         for piece in active_pieces:
             piece.grid_pos_to_pixels(piece.grid_pos_x, piece.grid_pos_y, change_mana=False, bypass_mana=True, update_variables=True)
-            piece.image = Piece.smoothscale_images(piece.original_image)
-
-    @ staticmethod
-    def smoothscale_images(image_to_scale):
-        # print(image_to_scale)
-        return pygame.transform.smoothscale(image_to_scale, (Piece.pieces_dimension, Piece.pieces_dimension))
+            piece.image = Media.scale(piece.original_image, Media.pieces_size, Media.pieces_size)
 
 
 class Mage(Piece):
@@ -338,21 +331,15 @@ class Mage(Piece):
 
         self.specie = "mage"
 
-        Mage.loadimages()
+        # Mage.loadimages()
 
         if (team == "blue"):
-            self.original_image = Mage.blue_mage_original_image
-            self.image = Mage.blue_mage_image
+            self.original_image = Media.bare_imgs["blue_mage"]
+            self.image = Media.sized["blue_mage"]
 
         else:
-            self.original_image = Mage.red_mage_original_image
-            self.image = Mage.red_mage_image
-
-    def loadimages():
-        Mage.red_mage_original_image = Media.convert(pygame.image.load("resources\\images\\red_mage.png"), "alpha")
-        Mage.red_mage_image = Piece.smoothscale_images(Mage.red_mage_original_image)
-        Mage.blue_mage_original_image = Media.convert(pygame.image.load("resources\\images\\blue_mage.png"), "alpha")
-        Mage.blue_mage_image = Piece.smoothscale_images(Mage.blue_mage_original_image)
+            self.original_image = Media.bare_imgs["red_mage"]
+            self.image = Media.sized["red_mage"]
 
 
 class Archer(Piece):
@@ -362,21 +349,15 @@ class Archer(Piece):
 
         self.specie = "archer"
 
-        Archer.loadimages()
+        # Archer.loadimages()
 
         if (team == "blue"):
-            self.original_image = Archer.blue_archer_original_image
-            self.image = Archer.blue_archer_image
+            self.original_image = Media.bare_imgs["blue_archer"]
+            self.image = Media.sized["blue_archer"]
 
         else:
-            self.original_image = Archer.red_archer_original_image
-            self.image = Archer.red_archer_image
-
-    def loadimages():
-        Archer.red_archer_original_image = Media.convert(pygame.image.load("resources\\images\\red_archer.png"), "alpha")
-        Archer.red_archer_image = Piece.smoothscale_images(Archer.red_archer_original_image)
-        Archer.blue_archer_original_image = Media.convert(pygame.image.load("resources\\images\\blue_archer.png"), "alpha")
-        Archer.blue_archer_image = Piece.smoothscale_images(Archer.blue_archer_original_image)
+            self.original_image = Media.bare_imgs["red_archer"]
+            self.image = Media.sized["red_archer"]
 
 
 class Knight(Piece):
@@ -386,24 +367,15 @@ class Knight(Piece):
 
         self.specie = "knight"
 
-        Knight.loadimages()
+        # Knight.loadimages()
 
         if (team == "blue"):
-            self.original_image = Knight.blue_knight_original_image
-            self.image = Knight.blue_knight_image
+            self.original_image = Media.bare_imgs["blue_knight"]
+            self.image = Media.sized["blue_knight"]
 
         else:
-            self.original_image = Knight.red_knight_original_image
-            self.image = Knight.red_knight_image
-
-    def loadimages():
-        Knight.red_knight_original_image = Media.convert(pygame.image.load("resources\\images\\red_knight.png"), "alpha")
-        Knight.red_knight_image = Piece.smoothscale_images(Knight.red_knight_original_image)
-
-        Knight.blue_knight_original_image = Media.convert(pygame.image.load("resources\\images\\blue_knight.png"), "alpha")
-        Knight.blue_knight_image = Piece.smoothscale_images(Knight.blue_knight_original_image)
-
-        # Knight.blue_knight_bar_image = Media.scale(Knight.blue_knight_original_image, Game.height/20,Game.height/20)
+            self.original_image = Media.bare_imgs["red_knight"]
+            self.image = Media.sized["red_knight"]
 
 
 class UI:
@@ -435,8 +407,6 @@ class Menu:
 
         self.sliders = [
             Slider(UI.config_menu_pos, (250, 20), 0.4, 0, 1)  # ,
-            # Slider((UI.center[0], UI.center[1]+75), (300, 40), 0.5, 50, 100),
-            # Slider((UI.center[0], UI.center[1]+150), (1000, 20), 0.5, 300, 100)
         ]
 
     def run(self, show_music):
@@ -474,18 +444,17 @@ class Piece_Selection_Menu:
 
     def __init__(self):
 
-        Piece_Selection_Menu.metrics = {"x": Game.height/0.693, "y": Game.height / 6.83, "w": Game.height / (1.6*2), "h": Game.height / 1.6}
-        Piece_Selection_Menu.original_image = pygame.image.load("resources\\images\\menu\\piece_selection_menu.png")
-        Piece_Selection_Menu.image = Media.convert(pygame.transform.smoothscale(Piece_Selection_Menu.original_image,
-                                                                                (Piece_Selection_Menu.metrics["w"], Piece_Selection_Menu.metrics["h"])), "alpha")
-
-        Piece_Selection_Menu.images_placement = [{"x": Game.height/0.66, "y": Game.height / 3.49},
-                                                 {"x": Game.height/0.66, "y": Game.height / 2.7},
-                                                 {"x": Game.height/0.66, "y": Game.height / 2.25}]
+        Piece_Selection_Menu.reference_piece_info = [{"x": Game.height/0.64, "y": Game.height / 3, "specie": "mage"},
+                                                     {"x": Game.height/0.64, "y": Game.height / 2.25, "specie": "archer"},
+                                                     {"x": Game.height/0.64, "y": Game.height / 1.7, "specie": "knight"}]
 
     @ staticmethod
     def draw(my_team):
-        Game.screen.blit(Piece_Selection_Menu.image, (Piece_Selection_Menu.metrics["x"], Piece_Selection_Menu.metrics["y"]))
+        Game.screen.blit(Media.sized["piece_selection_ui"], (Media.metrics["piece_selection_ui"]["x"], Media.metrics["piece_selection_ui"]["y"]))
+
+        for i in range(3):  # drawing the iamges as the reference pieces
+            Game.screen.blit(Media.specific_copies[my_team+"_"+Piece_Selection_Menu.reference_piece_info[i]["specie"]+"_piece_selection_image"],
+                             (Piece_Selection_Menu.reference_piece_info[i]["x"], Piece_Selection_Menu.reference_piece_info[i]["y"]))
 
 
 class Slider:
@@ -527,7 +496,7 @@ class Slider:
         if pos > self.slider_right_pos:
             pos = self.slider_right_pos
         self.btn_rect.centerx = pos
-        print("moved")
+        # print("moved")
 
     def hover(self):
         self.hovered = True
@@ -597,13 +566,79 @@ class Lobby:
         Game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
         Game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
         Game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
-        Game.screen.blit(Media.sized["setting_btn"], (Media.metrics["setting_btn"]["x"], Media.metrics["setting_btn"]["y"]))
 
         # print(Cursor.show_cursor)
         if Cursor.show_cursor:
             Cursor.draw()
 
         pygame.display.flip()
+
+
+class MatchCreation:
+
+    show_ingresar_btn = False
+
+    def __init__(self):
+        pass
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+        Game.screen.blit(Media.sized["generar_btn"], (Media.metrics["generar_btn"]["x"], Media.metrics["generar_btn"]["y"]))
+
+        if MatchCreation.show_ingresar_btn:
+            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
+
+        Game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
+        Game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
+        Game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
+
+        ClockAnimation.draw()
+
+        # if
+        # online_tools.Online.get_public_ip()
+
+        # print(Cursor.show_cursor)
+        if Cursor.show_cursor:
+            Cursor.draw()
+
+        pygame.display.flip()
+
+
+class ClockAnimation:
+
+    direction = 0
+
+    show_clock_animation = False
+
+    clock_animation_ite = 0
+
+    def __init__(self) -> None:
+        pass
+
+    def draw():
+        if ClockAnimation.show_clock_animation:
+            if 0 <= ClockAnimation.clock_animation_ite < 40:
+                i = 0
+            if 40 <= ClockAnimation.clock_animation_ite < 60:
+                i = 1
+            if 60 <= ClockAnimation.clock_animation_ite < 80:
+                i = 2
+            if 80 <= ClockAnimation.clock_animation_ite < 100:
+                i = 3
+            if 100 <= ClockAnimation.clock_animation_ite <= 140:
+                i = 4
+            Game.screen.blit(Media.sized[f"clk_{i}"], (Media.metrics[f"clk_{i}"]["x"], Media.metrics[f"clk_{i}"]["y"]))
+            if ClockAnimation.clock_animation_ite <= 0:
+                ClockAnimation.direction = 1
+            elif ClockAnimation.clock_animation_ite >= 140:
+                ClockAnimation.direction = -1
+
+            ClockAnimation.clock_animation_ite += ClockAnimation.direction
+
+        else:
+            ClockAnimation.clock_animation_ite = 0
 
 
 class Cursor:

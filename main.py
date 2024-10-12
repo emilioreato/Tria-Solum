@@ -12,24 +12,23 @@ def install_libraries():  # noqa
 
 install_libraries()  # noqa
 
+import sys
 
-from pygame.locals import *
-import copy
-import pygame
 import time
 import numpy
-import sys
-import pygame_gui
-import os
-import pyautogui  # from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality # noqa
-import clases
 import ctypes
 import math
 import random
-import dev_mouse
+import copy
 import threading
 import cv2
+import pygame
+import pygame_gui
+from pygame.locals import *
+import pyautogui  # from pyautogui import press  # do not delete this eventhough it is not used, for some reason it increases the render quality # noqa
 
+import clases  # noqa
+import dev_mouse  # noqa
 from online_utilities import firewall, online_tools, portforwarding
 from media import Media
 
@@ -50,6 +49,7 @@ my_team = "blue"
 active_uis = {
     "intro": True,
     "lobby": False,
+    "match_creation": False,
     "piece_selection": False,
     "ingame": False,
     "settings": False,
@@ -64,13 +64,16 @@ selected_piece = None
 
 current_turn = None
 
+online_set_up_done = False
+
+just_clicked_smth = False
+
 follow_mouse = False
 shrink_state = False
 
-selected_background = 0  # backgrounds related variables
+selected_background = 0
 
 music_pause_state = False  # audio related variables
-current_volume = 0.5
 
 intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
               "audio": "resources\\intro\\intro_audio.mp3"}
@@ -79,26 +82,27 @@ intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video
 # USEFUL FUNCTIONS
 
 def setup():
-    global piece_selection_menu, config_menu, turn_btn, mini_flag, lobby, sound_player, cursor
+    global piece_selection_menu, config_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation
+
+    sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
+
+    Media.load_media(game.height)
+    Media.resize(game.height)
+
     clases.UI.init()
-    piece_selection_menu = clases.Piece_Selection_Menu()
     config_menu = clases.Menu()
     turn_btn = clases.Turn_Btn()
     mini_flag = clases.Mini_Flags()
     lobby = clases.Lobby()
-    sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
-
-    clases.Piece.set_dimension()  # sets the adecuate dimension for the pieces
-
-    Media.load_media(game.height)
-    Media.resize(game.height)
+    match_creation = clases.MatchCreation()
+    piece_selection_menu = clases.Piece_Selection_Menu()
 
     game.create_center_points()
 
     cursor = clases.Cursor()
 
 
-def set_up_online():  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
+def set_up_online(mode):  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
     global port
     port = 8050  # this port seems to work pretty well
     firewall.FirewallRules.check_firewall_installation_status('installation_status.txt', port)
@@ -110,17 +114,18 @@ def set_up_online():  # this function sets up the server and client objects as a
     if not portforwarding.Portforwarding.check_ports(port):
         portforwarding.Portforwarding.open_port(local_ip, port, port, "TCP")
 
-    choice = input("Unirse a partida(1) o crear una partida(2):").strip()
-    if (choice == "1"):
+    if mode == "server":
         global sckt
         sckt = online_tools.Client()
         ip = input("Ingrese la clave de la partida:").strip()
         sckt.set_up_client(ip, port)
-    else:
-
+    elif mode == "client":
         sckt = online_tools.Server()
-        print("La clave de tu partida es:", online_tools.Online.get_public_ip())
+        # print("La clave de tu partida es:", online_tools.Online.get_public_ip())
         sckt.set_up_server(port)
+
+    global online_set_up_done
+    online_set_up_done = True
 
 
 def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
@@ -305,6 +310,8 @@ def collidepoint_with_sound(rect, point_pos):  # a modified version of collidepo
 
     if collided:
         sound_player.play_sfx(sound_player.SFX[1])
+        global just_clicked_smth
+        just_clicked_smth = True
         return True
     return False
 
@@ -313,7 +320,24 @@ def get_at_with_sound(rect, relative_pos):  # the same as collidepoint_with_soun
     collided = rect.get_at(relative_pos)
     if collided:
         sound_player.play_sfx(sound_player.SFX[1])
+        global just_clicked_smth
+        just_clicked_smth = True
         return True
+    return False
+
+
+# this function is used to check if the rect of an element is allowed to be used in the current ui. excellent for button that you want to be active only in certain ui like the lobby and not in the ingame.
+def check_ui_allowance(element_in_media_rect_list):
+
+    use_in = element_in_media_rect_list["use_rect_in"]
+
+    if type(use_in) == list:
+        for possible_use in use_in:
+            if active_uis[possible_use] == True:
+                return True
+    else:
+        if use_in == "all" or active_uis[use_in] == True:
+            return True
     return False
 
 
@@ -324,10 +348,6 @@ def set_mouse_usage(visible=False, grab=True):
         clases.Cursor.show_cursor = True
     pygame.mouse.set_visible(visible)  # both needed for set mouse in virtual mode
     pygame.event.set_grab(grab)
-
-
-UI_REFRESH_RATE = game.timer.tick(game.dev_mode.DisplayFrequency)/1000
-manager = pygame_gui.UIManager((game.width, game.height))
 
 
 def draw():
@@ -348,24 +368,15 @@ def draw():
     game.screen.blit(Media.sized["setting_btn"], (Media.metrics["setting_btn"]["x"], Media.metrics["setting_btn"]["y"]))
 
     if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
-        if piece_selection_menu.already_executed == False:
-            piece_selection_menu.already_executed = True
-            global reference_pieces
-            reference_pieces = [
-                clases.Knight(clases.Piece_Selection_Menu.images_placement[0]["x"], clases.Piece_Selection_Menu.images_placement[0]["y"], my_team, 0, 0, 0, 0, 0, pos_mode="pixels"),
-                clases.Mage(clases.Piece_Selection_Menu.images_placement[1]["x"], clases.Piece_Selection_Menu.images_placement[1]["y"], my_team, 0, 0, 0, 0, 0,  pos_mode="pixels"),
-                clases.Archer(clases.Piece_Selection_Menu.images_placement[2]["x"], clases.Piece_Selection_Menu.images_placement[2]["y"], my_team, 0, 0, 0, 0, 0,  pos_mode="pixels")
-            ]
+
         piece_selection_menu.draw(my_team)
-        for piece in reference_pieces:
-            piece.draw(game.screen, piece.image)
 
     mini_flag.draw(current_turn)
     turn_btn.draw()
 
     my_team_count = 0
     enemy_count = 0
-    for piece in active_pieces:    # displaying all pieces
+    for piece in active_pieces:    # displaying all pieces and their health and mana bars
         if piece.team == my_team:
             my_team_count += 1
         else:
@@ -385,6 +396,11 @@ def draw():
 def stopmusic():
     pygame.mixer.quit()  # close the pygame mixer
 
+
+window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so later its position can be changed when maximizing the window
+
+UI_REFRESH_RATE = game.timer.tick(game.dev_mode.DisplayFrequency)/1000
+manager = pygame_gui.UIManager((game.width, game.height))
 
 # varibles needed to control fps
 start_time = time.time()  # Record the starting time
@@ -439,8 +455,12 @@ while True:  # Main loop
 
     for event in pygame.event.get():  # manage events
 
-        if event.type == pygame.MOUSEMOTION:  # checks for btns(their rectangles) being hovered
-            if (ite1 >= 12):
+        if event.type == pygame.MOUSEMOTION or just_clicked_smth:  # checks for btns(their rectangles) being hovered and in that case changes the cursor image
+            if just_clicked_smth:
+                event.pos = pygame.mouse.get_pos()
+
+            if (ite1 >= 12 or just_clicked_smth):  # just_clicked_smth is used because you want to proccess the new cursor image as soon as possible after you clike a btn meaning the ui might have changed and there would be no longer a botton in that same spot
+                just_clicked_smth = False
                 ite1 = 0
                 clases.Cursor.image = Media.sized["cursor_default"]
                 for values in Media.rects.values():
@@ -468,6 +488,7 @@ while True:  # Main loop
             if event.button == 1:  # then event.pos is used and it only tells the position of the mouse when the event occured
 
                 for piece in active_pieces:  # Checks if any piece was clicked
+
                     if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
                         print("pieza clickeada")
 
@@ -489,59 +510,67 @@ while True:  # Main loop
                                 selected_piece = None
                             active_pieces.remove(piece)
 
-                if my_team == current_turn or not play_online:
-                    if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
-                        change_turn()
-                        if play_online:
-                            sckt.send("turn")
-                        print("changed turn")
+                if active_uis["ingame"]:
+                    if my_team == current_turn or not play_online:
+                        if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
+                            change_turn()
+                            if play_online:
+                                sckt.send("turn")
+                            print("changed turn")
 
-                if collidepoint_with_sound(Media.rects["x_btn"]["rect"], event.pos):  # check if btn was clicked
+                if check_ui_allowance(Media.rects["setting_btn"]) and collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
+                    active_uis["settings"] = not active_uis["settings"]
+                elif collidepoint_with_sound(Media.rects["x_btn"]["rect"], event.pos):  # check if btn was clicked
                     finish_program()
+                elif collidepoint_with_sound(Media.rects["minimize_btn"]["rect"], event.pos):  # check if btn was clicked
+                    window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
+                    window.minimize()  # minimize the window
                 elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clicked
                     shrink_state = not shrink_state  # pulsator to conmutator logic
-                    window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so its position can be changed
-
                     if shrink_state:
-                        window.moveTo(180, 100)  # move the window
+                        window.moveTo(game.width//6, game.height//7)  # move the window
                         game.set_up_window(1.4)
-                        clases.Piece.set_dimension()
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
-
                         clases.Piece.resize(active_pieces)
                         set_mouse_usage(True, False)
                     else:
                         game.set_up_window(1, pygame.NOFRAME)
-                        clases.Piece.set_dimension()
-                        window.moveTo(0, 0)  # move the window
+                        window.moveTo(0, 0)
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
-
                         clases.Piece.resize(active_pieces)
                         set_mouse_usage(False, True)
-                        break
-                elif collidepoint_with_sound(Media.rects["minimize_btn"]["rect"], event.pos):  # check if btn was clicked
-                    window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
-                    window.minimize()  # minimize the window
-                elif collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
-                    active_uis["settings"] = not active_uis["settings"]
-                elif collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
-                    active_uis["ingame"] = True
-                    if play_online:
-                        set_up_online()
+
+                # GOING THROUGH THE MENUS
+                elif check_ui_allowance(Media.rects["crear_btn"]) and collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
+                    print("crear")
+                    active_uis["lobby"] = False
+                    active_uis["match_creation"] = True
+                elif check_ui_allowance(Media.rects["generar_btn"]) and collidepoint_with_sound(Media.rects["generar_btn"]["rect"], event.pos):  # check if btn was clicked
+                    print("okk")
+                    clases.ClockAnimation.show_clock_animation = True
+                    if (play_online):
+                        threading.Thread(target=set_up_online, args=("server",), daemon=True).start()
+                    else:
+                        online_set_up_done = True
+                        clases.MatchCreation.show_ingresar_btn = True
+                elif check_ui_allowance(Media.rects["ingresar_btn"]) and collidepoint_with_sound(Media.rects["ingresar_btn"]["rect"], event.pos):  # check if btn was clicked
                     if (play_online):
                         assign_teams()
                     assign_turn()
-                    active_uis["lobby"] = False
+                    if online_set_up_done:
+                        clases.MatchCreation.show_ingresar_btn = False
+                        active_uis["match_creation"] = False
+                        active_uis["piece_selection"] = True
 
                 if active_uis["piece_selection"]:
-                    for ref_piece in reference_pieces:  # Checks if any piece was clicked
-                        if ref_piece.is_clicked(event.pos, (ref_piece.pos_x, ref_piece.pos_y)):  # Comprobar si el clic está dentro del circulo
+                    for i in range(3):  # Checks if any piece was clicked
+                        if clases.Piece.is_clicked(event.pos, (piece_selection_menu.reference_piece_info[i]["x"]+(Media.pieces_size*1.5)/2, piece_selection_menu.reference_piece_info[i]["y"]+(Media.pieces_size*1.5)/2), mult=1.5):
                             follow_mouse = True
-                            match ref_piece.specie:
+                            match piece_selection_menu.reference_piece_info[i]["specie"]:
                                 case "mage":
                                     piece = clases.Mage(0, 0, my_team, 20, 20, 20, 20, 2)
                                 case "archer":
@@ -624,7 +653,7 @@ while True:  # Main loop
             elif (pygame.key.name(event.key) == "m"):
                 pygame.mixer.music.stop()
             elif (pygame.key.name(event.key) == "n"):
-                clases.Sound.play_song_on_thread(sound_player.PLAYLIST)
+                clases.Sound.play_song_on_thread()
             elif (pygame.key.name(event.key) == "h"):
                 if selected_piece != None:
                     active_pieces[selected_piece].hp -= 1
@@ -635,10 +664,14 @@ while True:  # Main loop
         elif event.type == pygame.QUIT:
             finish_program()
 
-    if active_uis["ingame"]:
+    if active_uis["ingame"] or active_uis["piece_selection"]:
         draw()
     elif active_uis["lobby"]:
         lobby.draw()
+    elif active_uis["match_creation"]:
+        match_creation.draw()
+        if online_set_up_done:
+            clases.ClockAnimation.show_clock_animation = False
 
     ite0 += 1  # iterator used to control events
     ite1 += 1
@@ -646,9 +679,18 @@ while True:  # Main loop
 
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop
-    if time.time() - start_time >= 1:
-        # print(loop_count)
+    if time.time() - start_time >= 0.5:
+        print(loop_count/0.5)
         loop_count = 0
         start_time = time.time()
 
     game.timer.tick(game.dev_mode.DisplayFrequency)  # set the fps to the maximun possible
+
+    """
+                        if play_online:
+                        set_up_online()
+                    if (play_online):
+                        assign_teams()
+                    assign_turn()
+    
+    """
