@@ -4,6 +4,8 @@ import requests
 
 class Online:
 
+    public_ip = None
+
     def __init__(self):
         self.mode = "undefined"  # can be "server" or "client"
         pass
@@ -52,6 +54,7 @@ class Server(Online):  # a class that contains all the functions and utilities t
 
         self.socket.bind(("0.0.0.0", PORT))  # setting up the socket ///"localhost"
 
+    def server_wait_for_connection(self):
         self.socket.listen(1)  # now we accept entring connections
 
         print("Waiting for the oppenent to join.")

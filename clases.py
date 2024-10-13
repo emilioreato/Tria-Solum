@@ -11,12 +11,16 @@ from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
 import random
 import string
+from online_utilities import online_tools
+import pygame_gui
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
 
 
 class Game:
+
+    GRIS_OSCURO = (20, 21, 23)
 
     board_size = 8
     center_points = []
@@ -117,6 +121,10 @@ class Sound:
         if len(Sound.generated_tracks) > (len(Sound.PLAYLIST)-5):
             Sound.generated_tracks.pop(0)
 
+    @staticmethod
+    def stopmusic():
+        pygame.mixer.quit()  # close the pygame mixer
+
 
 class Piece:
 
@@ -177,8 +185,8 @@ class Piece:
 
     def draw_health_bar(self, my_team, my_team_count, enemy_count):
 
-        bar_width = Game.height/6.4
-        bar_height = Game.height/64
+        bar_width = Game.height/5.128
+        bar_height = Game.height/24
 
         health_percentage = self.hp / self.max_hp  # Calcula la longitud de la barra de vida en función del porcentaje de vida
         health_bar_length = int(bar_width * health_percentage)
@@ -186,30 +194,23 @@ class Piece:
         mana_percentage = self.mana / self.max_mana  # Calcula la longitud de la barra de vida en función del porcentaje de vida
         mana_bar_length = int(bar_width * mana_percentage)
 
-        bar_x = (Game.width/16.991)  # Mueve un poco la barra a la izquierda de la pieza
+        bar_x = (Game.width/15)  # Mueve un poco la barra a la izquierda de la pieza
         if self.team == my_team:
-
-            bar_y = (Game.height/1.095)  # Ajusta para colocar la barra debajo de la pieza
-            bar_y = bar_y - my_team_count * 75
+            bar_y = (Game.height/1.14) - my_team_count * Game.height/9.4
         else:
+            bar_y = (Game.height/22) + enemy_count * Game.height/9.4 - Game.height/6
 
-            bar_y = (Game.height/22)
-            bar_y = bar_y + enemy_count * 75 - Game.height/6
+        Game.screen.blit(Media.specific_copies[self.team+"_"+self.specie+"_bar"], (Game.width/60, bar_y+Game.height/120))
 
-        Game.screen.blit(Media.specific_copies[self.team+"_"+self.specie+"_bar"], (Game.width/19, bar_y))
+        x_buff = Game.width/79
+        y_buff = Game.height/54
+        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x+x_buff, bar_y+y_buff, bar_width, bar_height))
+        pygame.draw.rect(Game.screen, self.health_color, (bar_x+x_buff, bar_y+y_buff, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
 
-        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(Game.screen, self.health_color, (bar_x, bar_y, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
-
-        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x, bar_y+bar_height, bar_width, bar_height/2))
-        pygame.draw.rect(Game.screen, self.mana_color, (bar_x, bar_y+bar_height, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
+        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x+x_buff, bar_y+bar_height+y_buff, bar_width, bar_height/2))
+        pygame.draw.rect(Game.screen, self.mana_color, (bar_x+x_buff, bar_y+bar_height+y_buff, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
 
         Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
-
-    """@ classmethod
-    def set_dimension(cls, mult=1, screenratio=1):
-        cls.pieces_dimension = round((Game.height // 14) / mult)
-        print("pieces_dimension:", cls.pieces_dimension)"""
 
     @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
@@ -563,20 +564,15 @@ class Lobby:
         Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
         Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
 
-        Game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
-        Game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
-        Game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
-
-        # print(Cursor.show_cursor)
-        if Cursor.show_cursor:
-            Cursor.draw()
-
-        pygame.display.flip()
-
 
 class MatchCreation:
 
     show_ingresar_btn = False
+
+    show_ip_copy_button = False
+
+    ip_text = None
+    ip_text_rect = None
 
     def __init__(self):
         pass
@@ -589,21 +585,50 @@ class MatchCreation:
 
         if MatchCreation.show_ingresar_btn:
             Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
-
-        Game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns
-        Game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
-        Game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
+        if MatchCreation.show_ip_copy_button:
+            Game.screen.blit(Media.sized["copy_btn"], (Media.metrics["copy_btn"]["x"], Media.metrics["copy_btn"]["y"]))
+            Game.screen.blit(MatchCreation.ip_text, MatchCreation.ip_text_rect)
 
         ClockAnimation.draw()
 
-        # if
-        # online_tools.Online.get_public_ip()
+    def render_ip_text():
+        font = pygame.font.Font(None, Game.height//34)
+        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.GRIS_OSCURO)
+        MatchCreation.ip_text_rect = MatchCreation.ip_text.get_rect(center=(Game.width/2,  Game.height/1.98))
 
-        # print(Cursor.show_cursor)
-        if Cursor.show_cursor:
-            Cursor.draw()
 
-        pygame.display.flip()
+class JoinMatch:
+
+    show_ingresar_btn = False
+
+    def __init__(self, manager):
+        JoinMatch.input_rect = pygame.Rect(Game.width // 2 - (Game.height/5)/2, Game.height // 2 - 50, Game.height/5, 50)
+        JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
+
+        JoinMatch.boton_rect = pygame.Rect(Game.width // 2 + (Game.height/5)/2, Game.height // 2 - 50, 100, 50)
+        JoinMatch.boton_ingresar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
+
+        JoinMatch.hide_input()
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+
+        ClockAnimation.draw()
+
+        if JoinMatch.show_ingresar_btn:
+            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
+
+    @staticmethod
+    def show_input():
+        JoinMatch.input_texto.show()
+        JoinMatch.boton_ingresar.show()
+
+    @staticmethod
+    def hide_input():
+        JoinMatch.input_texto.hide()
+        JoinMatch.boton_ingresar.hide()
 
 
 class ClockAnimation:

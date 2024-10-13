@@ -31,6 +31,7 @@ class Media:
             "minimize_btn": pygame.image.load("resources\\icons\\minimize.png").convert_alpha(),
             "setting_btn": pygame.image.load("resources\\icons\\setting.png").convert_alpha(),
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
+            "copy_btn": pygame.image.load("resources\\images\\menu\\paperclip_copy.png").convert_alpha(),
 
             "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar.png").convert_alpha(),
 
@@ -41,8 +42,12 @@ class Media:
             "clk_4": pygame.image.load("resources\\icons\\clock\\4.png").convert_alpha(),
 
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
-            "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
+            "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
+
+            "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
+
+            "volver_btn": pygame.image.load("resources\\images\\menu\\volver.png").convert(),
             "crear_btn": pygame.image.load("resources\\images\\menu\\crear.png").convert(),
             "unirse_btn": pygame.image.load("resources\\images\\menu\\unirse.png").convert(),
             "generar_btn": pygame.image.load("resources\\images\\menu\\generar_clave_de_partida.png").convert(),
@@ -71,22 +76,28 @@ class Media:
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "ingame"},
             "music_btn": {"x": height/0.78, "y": height / 8, "w": height / 28, "h": height / 28, "use_rect_in": "settings"},
+            "copy_btn": {"x": height/1, "y": height / 2.05, "w": height / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
 
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
 
-            "clk_0": {"x": height/0.85, "y": height / 2, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_1": {"x": height/0.85, "y": height / 2, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_2": {"x": height/0.85, "y": height / 2, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_3": {"x": height/0.85, "y": height / 2, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_4": {"x": height/0.85, "y": height / 2, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_0": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_1": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_2": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_3": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_4": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+
 
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
+            "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+            "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
-            "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/6, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+
+            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "match_creation_ready", "join_match_ready")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
-            "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.3, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
+            "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.1, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
-            "ingresar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.8, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
+            "ingresar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.8, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation_ready", "join_match_ready")},
 
         }
 
@@ -100,7 +111,7 @@ class Media:
         for key in Media.bare_imgs.keys():
             if "mage" in key or "archer" in key or "knight" in key:
                 # these images correspond to the mini images for the health and mana bar
-                Media.specific_copies.update({key+"_bar": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*0.8, Media.metrics[key]["h"]*0.8)})
+                Media.specific_copies.update({key+"_bar": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*1.2, Media.metrics[key]["h"]*1.22)})
                 # these correspond to the big images in the piece selection menu
                 Media.specific_copies.update({key+"_piece_selection_image": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*1.5, Media.metrics[key]["h"]*1.5)})
 
