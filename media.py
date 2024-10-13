@@ -24,6 +24,7 @@ class Media:
             "red_knight": pygame.image.load("resources\\images\\red_knight.png").convert_alpha(),
             "blue_knight": pygame.image.load("resources\\images\\blue_knight.png").convert_alpha(),
 
+            "grey_warning": pygame.image.load("resources\\icons\\grey_warning.png").convert_alpha(),
             "cursor_default": pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha(),
             "cursor_hand": pygame.image.load("resources\\icons\\cursor_hand.png").convert_alpha(),
             "x_btn": pygame.image.load("resources\\icons\\x.png").convert_alpha(),
@@ -31,9 +32,10 @@ class Media:
             "minimize_btn": pygame.image.load("resources\\icons\\minimize.png").convert_alpha(),
             "setting_btn": pygame.image.load("resources\\icons\\setting.png").convert_alpha(),
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
-            "copy_btn": pygame.image.load("resources\\images\\menu\\paperclip_copy.png").convert_alpha(),
+            "copy_btn": pygame.image.load("resources\\icons\\paperclip_copy.png").convert_alpha(),
 
             "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar.png").convert_alpha(),
+            "enemy_bar": pygame.image.load("resources\\images\menu\\enemy_bar3.png").convert_alpha(),
 
             "clk_0": pygame.image.load("resources\\icons\\clock\\0.png").convert_alpha(),
             "clk_1": pygame.image.load("resources\\icons\\clock\\1.png").convert_alpha(),
@@ -69,6 +71,7 @@ class Media:
             "red_knight": {"x": 0, "y": 0, "w": Media.pieces_size, "h": Media.pieces_size, "make_rect": False},
             "blue_knight": {"x": 0, "y": 0, "w": Media.pieces_size, "h": Media.pieces_size, "make_rect": False},
 
+            "grey_warning": {"x": 0, "y": 0, "w": height*(256/232) / 22, "h": height / 22, "make_rect": False},
             "cursor_default": {"w": 30 * 0.805, "h": 30, "make_rect": False},
             "cursor_hand": {"w": 30 * 0.805, "h": 30, "make_rect": False},
             "x_btn": {"x": height//0.58, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
@@ -76,9 +79,10 @@ class Media:
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "ingame"},
             "music_btn": {"x": height/0.78, "y": height / 8, "w": height / 28, "h": height / 28, "use_rect_in": "settings"},
-            "copy_btn": {"x": height/1, "y": height / 2.05, "w": height / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
+            "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
 
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
+            "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
 
             "clk_0": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_1": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
@@ -111,7 +115,7 @@ class Media:
         for key in Media.bare_imgs.keys():
             if "mage" in key or "archer" in key or "knight" in key:
                 # these images correspond to the mini images for the health and mana bar
-                Media.specific_copies.update({key+"_bar": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*1.2, Media.metrics[key]["h"]*1.22)})
+                Media.specific_copies.update({key+"_team_bar": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*1.2, Media.metrics[key]["h"]*1.2)})
                 # these correspond to the big images in the piece selection menu
                 Media.specific_copies.update({key+"_piece_selection_image": Media.scale(Media.bare_imgs[key], Media.metrics[key]["w"]*1.5, Media.metrics[key]["h"]*1.5)})
 

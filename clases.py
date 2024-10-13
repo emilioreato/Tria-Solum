@@ -131,9 +131,9 @@ class Piece:
     pieces_ids = []
 
     health_color = (170, 0, 10)
-    health_background_color = (30, 0, 0)
-    mana_color = (224, 159, 7)
-    mana_background_color = (74, 52, 0)
+    health_background_color = (33, 3, 3)
+    mana_color = (232, 159, 10)
+    mana_background_color = (76, 55, 5)
 
     def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):  # init method for evety piece where it gets another ingame values assigned
         self.max_hp = hp
@@ -185,32 +185,50 @@ class Piece:
 
     def draw_health_bar(self, my_team, my_team_count, enemy_count):
 
-        bar_width = Game.height/5.128
-        bar_height = Game.height/24
-
-        health_percentage = self.hp / self.max_hp  # Calcula la longitud de la barra de vida en función del porcentaje de vida
-        health_bar_length = int(bar_width * health_percentage)
-
-        mana_percentage = self.mana / self.max_mana  # Calcula la longitud de la barra de vida en función del porcentaje de vida
-        mana_bar_length = int(bar_width * mana_percentage)
-
-        bar_x = (Game.width/15)  # Mueve un poco la barra a la izquierda de la pieza
         if self.team == my_team:
+            is_my_piece = True
+            mult = 1
+            # hp_enemy_mult = 1
+        else:
+            is_my_piece = False
+            # hp_enemy_mult = 1.3
+            mult = 10/12
+
+        bar_width = mult*Game.height/5.128
+        bar_height = mult*Game.height/24  # hp_enemy_mult*
+
+        health_percentage = self.hp / self.max_hp  # calculates the length of the health bar in function of the percentage of health
+        health_bar_length = int(mult*bar_width * health_percentage)
+
+        mana_percentage = self.mana / self.max_mana  # calculates the length of the mana bar in function of the percentage of mana
+        mana_bar_length = int(mult*bar_width * mana_percentage)
+
+        bar_x = (Game.width/15)
+
+        if is_my_piece:
             bar_y = (Game.height/1.14) - my_team_count * Game.height/9.4
         else:
-            bar_y = (Game.height/22) + enemy_count * Game.height/9.4 - Game.height/6
+            bar_y = (Game.height/8) + enemy_count * Game.height/9.4 * mult
 
-        Game.screen.blit(Media.specific_copies[self.team+"_"+self.specie+"_bar"], (Game.width/60, bar_y+Game.height/120))
+        if is_my_piece:
+            Game.screen.blit(Media.specific_copies[self.team+"_"+self.specie+"_team_bar"], (Game.width/60, bar_y+Game.height/120))
+        else:
+            Game.screen.blit(Media.sized[self.team+"_"+self.specie], (Game.width/60, bar_y+Game.height/120))
 
-        x_buff = Game.width/79
-        y_buff = Game.height/54
+        x_buff = Game.width/79 * mult
+        y_buff = Game.height/54 * mult
+
         pygame.draw.rect(Game.screen, self.health_background_color, (bar_x+x_buff, bar_y+y_buff, bar_width, bar_height))
         pygame.draw.rect(Game.screen, self.health_color, (bar_x+x_buff, bar_y+y_buff, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
 
-        pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x+x_buff, bar_y+bar_height+y_buff, bar_width, bar_height/2))
-        pygame.draw.rect(Game.screen, self.mana_color, (bar_x+x_buff, bar_y+bar_height+y_buff, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
+        if is_my_piece:
 
-        Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
+            pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x+x_buff, bar_y+bar_height+y_buff, bar_width, bar_height/2))
+            pygame.draw.rect(Game.screen, self.mana_color, (bar_x+x_buff, bar_y+bar_height+y_buff, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
+
+            Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
+        else:
+            Game.screen.blit(Media.sized["enemy_bar"], (bar_x, bar_y))
 
     @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)

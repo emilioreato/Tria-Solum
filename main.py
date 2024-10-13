@@ -436,6 +436,9 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
     game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
 
+    if check_ui_allowance(Media.rects["volver_btn"]):
+        game.screen.blit(Media.sized["volver_btn"], (Media.metrics["volver_btn"]["x"], Media.metrics["volver_btn"]["y"]))
+
     manager.draw_ui(game.screen)
 
     if clases.Cursor.show_cursor:  # displaying cursor
@@ -639,7 +642,7 @@ while True:  # Main loop
 
                     if active_uis["match_creation_ready"]:
                         clases.MatchCreation.show_ingresar_btn = False
-                        active_uis["match_creation"] = False
+                        active_uis["match_creation_ready"] = False
                         active_uis["piece_selection"] = True
 
                     elif active_uis["join_match_ready"]:
@@ -797,7 +800,7 @@ while True:  # Main loop
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop
     if time.time() - start_time >= 3:
-        print(loop_count/3)
+        print(f"{loop_count/3:.0f}")
         loop_count = 0
         start_time = time.time()
 
