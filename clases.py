@@ -649,6 +649,14 @@ class JoinMatch:
         JoinMatch.boton_ingresar.hide()
 
 
+"""class Chat:
+
+    def __init__(self) -> None:
+        pass
+
+    show_chat = False"""
+
+
 class ClockAnimation:
 
     direction = 0

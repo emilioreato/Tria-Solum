@@ -221,6 +221,9 @@ def receive_messages():  # This function receives messages from the server while
                     global selected_piece
                     selected_piece = None
 
+                case "chat":
+                    print("enemy: ", args[1])
+
                 case "exit":
                     print("the enemy has abandoned the game")
 

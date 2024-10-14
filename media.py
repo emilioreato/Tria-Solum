@@ -43,6 +43,7 @@ class Media:
             "clk_3": pygame.image.load("resources\\icons\\clock\\3.png").convert_alpha(),
             "clk_4": pygame.image.load("resources\\icons\\clock\\4.png").convert_alpha(),
 
+            "chat": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
             "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
@@ -90,7 +91,7 @@ class Media:
             "clk_3": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_4": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
 
-
+            "chat": {"x": height/0.693, "y":  height / 6.83, "w": (height*(1280/1080)) / (1.6), "h": height / 1.6, "make_rect": False},
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
             "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
