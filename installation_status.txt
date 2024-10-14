@@ -1,6 +1,4 @@
 
-copy installed
-pygame installed
 time installed
 numpy installed
 pygame_gui installed
@@ -18,3 +16,4 @@ string installed
 socket installed
 requests installed
 firewall rules created
+copy installed

@@ -34,7 +34,7 @@ class Media:
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
             "copy_btn": pygame.image.load("resources\\icons\\paperclip_copy.png").convert_alpha(),
 
-            "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar.png").convert_alpha(),
+            "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar2.png").convert_alpha(),
             "enemy_bar": pygame.image.load("resources\\images\menu\\enemy_bar3.png").convert_alpha(),
 
             "clk_0": pygame.image.load("resources\\icons\\clock\\0.png").convert_alpha(),
@@ -44,6 +44,7 @@ class Media:
             "clk_4": pygame.image.load("resources\\icons\\clock\\4.png").convert_alpha(),
 
             "chat": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
+            "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
             "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
@@ -55,6 +56,7 @@ class Media:
             "unirse_btn": pygame.image.load("resources\\images\\menu\\unirse.png").convert(),
             "generar_btn": pygame.image.load("resources\\images\\menu\\generar_clave_de_partida.png").convert(),
             "ingresar_btn": pygame.image.load("resources\\images\\menu\\ingresar.png").convert(),
+            "configuration_btn": pygame.image.load("resources\\images\\menu\\configuracion.png").convert(),
         }
 
         Media.resize_metrics(height)
@@ -63,6 +65,15 @@ class Media:
         width = height*(16/9)
 
         Media.pieces_size = height/14
+
+        Media.slider_metrics = (height/1.35, height / 2.25)
+
+        Media.clock_animation_metrics = {
+            "match_creation": (height/0.957, height / 2.578),
+            "match_creation_ready": (height/0.957, height / 1.4),
+            "join_match_ready": (height/1.166, height / 2.216),
+            "join_match": (height/0.957, height / 1.6)
+        }
 
         Media.metrics = {  # DONT MAKE A KEY "MAKE_RECT" TRUE BECAUSE IT WONT MATTER, IT WONT MAKE THE RECTANGLE ANYWAY. later in the code the rectangles are created when in the keys there is the keyword "make_rect" so if you dont want the rect, just doesnt even speficy it
             "red_mage": {"x": 0, "y": 0, "w": Media.pieces_size, "h": Media.pieces_size, "make_rect": False},
@@ -78,32 +89,33 @@ class Media:
             "x_btn": {"x": height//0.58, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "shrink_btn": {"x": height//0.6, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
-            "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "ingame"},
-            "music_btn": {"x": height/0.78, "y": height / 8, "w": height / 28, "h": height / 28, "use_rect_in": "settings"},
+            "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": ("ingame", "match_creation", "join_match", "match_creation_ready", "join_match_ready")},
+            "music_btn": {"x": height/1.972, "y": height / 2.351, "w": height / 28, "h": height / 28, "use_rect_in": "configuration_ui"},
             "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
 
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
             "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
 
-            "clk_0": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_1": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_2": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_3": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
-            "clk_4": {"x": height/0.957, "y": height / 2.578, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_0": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_1": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_2": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_3": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
+            "clk_4": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
 
             "chat": {"x": height/0.693, "y":  height / 6.83, "w": (height*(1280/1080)) / (1.6), "h": height / 1.6, "make_rect": False},
+            "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
             "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
-            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "match_creation_ready", "join_match_ready")},
+            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "match_creation_ready", "join_match_ready", "configuration_ui")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
             "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.1, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
             "ingresar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.8, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation_ready", "join_match_ready")},
-
+            "configuration_btn": {"x": width/2-((height*(1280/222))/28)/2, "y":  height/1.7, "w": (height*(1280/222))/28, "h": height/28, "use_rect_in": "lobby"},
         }
 
     def resize(height):

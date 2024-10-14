@@ -13,9 +13,13 @@ import random
 import string
 from online_utilities import online_tools
 import pygame_gui
+import sys
+from PyQt5.QtWidgets import QApplication, QFileDialog
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
+
+# SYSTEM CLASSES
 
 
 class Game:
@@ -70,6 +74,12 @@ class Game:
             return image.convert_alpha()
         return image.convert()
 
+    def open_file_dialog():  # create an pyqt app to select the profile picture file
+        app = QApplication(sys.argv)
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(None, "Selecciona un archivo", "", "Todos los Archivos (*);;Archivos de Texto (*.txt)", options=options)
+        return file_path
+
 
 class Sound:
 
@@ -115,16 +125,22 @@ class Sound:
 
         Sound.generated_tracks.append(track)
 
-        pygame.mixer.music.load(track)  # loads the track
-        pygame.mixer.music.play()  # plays the track
+        Sound.play(track)
 
         if len(Sound.generated_tracks) > (len(Sound.PLAYLIST)-5):
             Sound.generated_tracks.pop(0)
 
     @staticmethod
+    def play(track):
+        pygame.mixer.music.load(track)  # loads the track
+        pygame.mixer.music.play()  # plays the track
+
+    @staticmethod
     def stopmusic():
         pygame.mixer.quit()  # close the pygame mixer
 
+
+# PIECES CLASSES
 
 class Piece:
 
@@ -188,20 +204,22 @@ class Piece:
         if self.team == my_team:
             is_my_piece = True
             mult = 1
-            # hp_enemy_mult = 1
         else:
             is_my_piece = False
-            # hp_enemy_mult = 1.3
             mult = 10/12
 
-        bar_width = mult*Game.height/5.128
-        bar_height = mult*Game.height/24  # hp_enemy_mult*
+        if is_my_piece:
+            bar_height = mult*Game.height/24
+            bar_width = mult*Game.height/5.125
+        else:
+            bar_height = mult*Game.height/16
+            bar_width = mult*Game.height/3.8
 
         health_percentage = self.hp / self.max_hp  # calculates the length of the health bar in function of the percentage of health
-        health_bar_length = int(mult*bar_width * health_percentage)
+        health_bar_length = int(bar_width * health_percentage)
 
         mana_percentage = self.mana / self.max_mana  # calculates the length of the mana bar in function of the percentage of mana
-        mana_bar_length = int(mult*bar_width * mana_percentage)
+        mana_bar_length = int(bar_width * mana_percentage)
 
         bar_x = (Game.width/15)
 
@@ -397,6 +415,168 @@ class Knight(Piece):
             self.image = Media.sized["red_knight"]
 
 
+# UI CLASSES
+
+
+class Lobby:
+
+    def __init__(self):
+        pass
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+        Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
+        Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
+
+
+class MatchCreation:
+
+    show_ingresar_btn = False
+
+    show_ip_copy_button = False
+
+    ip_text = None
+    ip_text_rect = None
+
+    def __init__(self):
+        pass
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+        Game.screen.blit(Media.sized["generar_btn"], (Media.metrics["generar_btn"]["x"], Media.metrics["generar_btn"]["y"]))
+
+        if MatchCreation.show_ingresar_btn:
+            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
+        if MatchCreation.show_ip_copy_button:
+            Game.screen.blit(Media.sized["copy_btn"], (Media.metrics["copy_btn"]["x"], Media.metrics["copy_btn"]["y"]))
+            Game.screen.blit(MatchCreation.ip_text, MatchCreation.ip_text_rect)
+
+        ClockAnimation.draw()
+
+    def render_ip_text():
+        font = pygame.font.Font(None, Game.height//34)
+        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.GRIS_OSCURO)
+        MatchCreation.ip_text_rect = MatchCreation.ip_text.get_rect(center=(Game.width/2,  Game.height/1.98))
+
+
+class JoinMatch:
+
+    show_ingresar_btn = False
+
+    def __init__(self, manager):
+
+        JoinMatch.input_rect = pygame.Rect(Game.width // 2 - (Game.height/5)/2, Game.height // 2 - 50, Game.height/5, 50)
+        JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
+
+        JoinMatch.boton_rect = pygame.Rect(Game.width // 2 + (Game.height/5)/2, Game.height // 2 - 50, 100, 50)
+        JoinMatch.boton_ingresar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
+
+        JoinMatch.hide_input()
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
+        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
+
+        ClockAnimation.draw()
+
+        if JoinMatch.show_ingresar_btn:
+            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
+
+    @staticmethod
+    def show_input():
+        JoinMatch.input_texto.show()
+        JoinMatch.boton_ingresar.show()
+
+    @staticmethod
+    def hide_input():
+        JoinMatch.input_texto.hide()
+        JoinMatch.boton_ingresar.hide()
+
+
+class Piece_Selection_Menu:
+
+    already_executed = False
+
+    def __init__(self):
+
+        Piece_Selection_Menu.reference_piece_info = [{"x": Game.height/0.64, "y": Game.height / 3, "specie": "mage"},
+                                                     {"x": Game.height/0.64, "y": Game.height / 2.25, "specie": "archer"},
+                                                     {"x": Game.height/0.64, "y": Game.height / 1.7, "specie": "knight"}]
+
+    @ staticmethod
+    def draw(my_team):
+        Game.screen.blit(Media.sized["piece_selection_ui"], (Media.metrics["piece_selection_ui"]["x"], Media.metrics["piece_selection_ui"]["y"]))
+
+        for i in range(3):  # drawing the iamges as the reference pieces
+            Game.screen.blit(Media.specific_copies[my_team+"_"+Piece_Selection_Menu.reference_piece_info[i]["specie"]+"_piece_selection_image"],
+                             (Piece_Selection_Menu.reference_piece_info[i]["x"], Piece_Selection_Menu.reference_piece_info[i]["y"]))
+
+
+class Configuration_Menu:
+
+    @staticmethod
+    def draw():
+
+        Game.screen.blit(Media.sized["configuration_ui"], (Media.metrics["configuration_ui"]["x"], Media.metrics["configuration_ui"]["y"]))
+
+
+class Chat:
+
+    def __init__(self) -> None:
+        pass
+
+    show_chat = False
+
+
+class ClockAnimation:
+
+    current_clock_metrics = None
+
+    direction = 0
+
+    show_clock_animation = False
+
+    clock_animation_ite = 0
+
+    def __init__(self) -> None:
+        pass
+
+    def draw():
+        if ClockAnimation.show_clock_animation:
+            if 0 <= ClockAnimation.clock_animation_ite < 40:
+                i = 0
+            if 40 <= ClockAnimation.clock_animation_ite < 60:
+                i = 1
+            if 60 <= ClockAnimation.clock_animation_ite < 80:
+                i = 2
+            if 80 <= ClockAnimation.clock_animation_ite < 100:
+                i = 3
+            if 100 <= ClockAnimation.clock_animation_ite <= 140:
+                i = 4
+            Game.screen.blit(Media.sized[f"clk_{i}"], (ClockAnimation.current_clock_metrics[0], ClockAnimation.current_clock_metrics[1]))
+            if ClockAnimation.clock_animation_ite <= 0:
+                ClockAnimation.direction = 1
+            elif ClockAnimation.clock_animation_ite >= 140:
+                ClockAnimation.direction = -1
+
+            ClockAnimation.clock_animation_ite += ClockAnimation.direction
+
+        else:
+            ClockAnimation.clock_animation_ite = 0
+
+    def set_animation_status(state, ui=None):  # When I want to change the animation state I also specify the measures I want to display it with. That is, I want to specify the position, but that is already configured for each UI, so you just pass the UI name
+
+        if ui != None:  # if we just want to turn the animation off then you dont need to pass the ui name
+            ClockAnimation.current_clock_metrics = Media.clock_animation_metrics[ui]
+
+        ClockAnimation.show_clock_animation = state
+
+
 class UI:
     # @staticmethod
     def init():
@@ -417,22 +597,17 @@ class UI:
         }
 
 
-class Menu:
+class Slider_Menu:
 
     def __init__(self):
 
-        config_menu_alpha_image = Game.convert_img(pygame.image.load("resources\\images\\menu\\config_menu.png"), "alpha")
-        Menu.config_menu_alpha_image = pygame.transform.smoothscale(config_menu_alpha_image, (Game.height / 2, Game.height / 2))
-
         self.sliders = [
-            Slider(UI.config_menu_pos, (250, 20), 0.4, 0, 1)  # ,
+            Slider(Media.slider_metrics, (250, 20), 0.4, 0, 1)  # ,
         ]
 
     def run(self, show_music):
         mouse_pos = pygame.mouse.get_pos()
         mouse = pygame.mouse.get_pressed()
-
-        Game.screen.blit(Menu.config_menu_alpha_image, (Game.height/0.8, Game.height / 10))  # displaying its background
 
         if show_music:
             Game.screen.blit(Media.sized["music_btn"], (Media.metrics["music_btn"]["x"], Media.metrics["music_btn"]["y"]))
@@ -449,31 +624,12 @@ class Menu:
                     slider.hover()
                     new_value = slider.get_value()
                     if slider.current_value != new_value:
-                        slider.current_value = new_value
+                        slider.current_value = round(new_value, 2)
                 else:
                     slider.hovered = False
 
                 slider.render()
                 # slider.display_value(self.app)
-
-
-class Piece_Selection_Menu:
-
-    already_executed = False
-
-    def __init__(self):
-
-        Piece_Selection_Menu.reference_piece_info = [{"x": Game.height/0.64, "y": Game.height / 3, "specie": "mage"},
-                                                     {"x": Game.height/0.64, "y": Game.height / 2.25, "specie": "archer"},
-                                                     {"x": Game.height/0.64, "y": Game.height / 1.7, "specie": "knight"}]
-
-    @ staticmethod
-    def draw(my_team):
-        Game.screen.blit(Media.sized["piece_selection_ui"], (Media.metrics["piece_selection_ui"]["x"], Media.metrics["piece_selection_ui"]["y"]))
-
-        for i in range(3):  # drawing the iamges as the reference pieces
-            Game.screen.blit(Media.specific_copies[my_team+"_"+Piece_Selection_Menu.reference_piece_info[i]["specie"]+"_piece_selection_image"],
-                             (Piece_Selection_Menu.reference_piece_info[i]["x"], Piece_Selection_Menu.reference_piece_info[i]["y"]))
 
 
 class Slider:
@@ -568,128 +724,6 @@ class Mini_Flags:
             Game.screen.blit(Mini_Flags.image_blue, Mini_Flags.rect)
         else:
             Game.screen.blit(Mini_Flags.image_red, Mini_Flags.rect)
-
-
-class Lobby:
-
-    def __init__(self):
-        pass
-
-    def draw(self):
-
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
-        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
-        Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
-        Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
-
-
-class MatchCreation:
-
-    show_ingresar_btn = False
-
-    show_ip_copy_button = False
-
-    ip_text = None
-    ip_text_rect = None
-
-    def __init__(self):
-        pass
-
-    def draw(self):
-
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
-        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
-        Game.screen.blit(Media.sized["generar_btn"], (Media.metrics["generar_btn"]["x"], Media.metrics["generar_btn"]["y"]))
-
-        if MatchCreation.show_ingresar_btn:
-            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
-        if MatchCreation.show_ip_copy_button:
-            Game.screen.blit(Media.sized["copy_btn"], (Media.metrics["copy_btn"]["x"], Media.metrics["copy_btn"]["y"]))
-            Game.screen.blit(MatchCreation.ip_text, MatchCreation.ip_text_rect)
-
-        ClockAnimation.draw()
-
-    def render_ip_text():
-        font = pygame.font.Font(None, Game.height//34)
-        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.GRIS_OSCURO)
-        MatchCreation.ip_text_rect = MatchCreation.ip_text.get_rect(center=(Game.width/2,  Game.height/1.98))
-
-
-class JoinMatch:
-
-    show_ingresar_btn = False
-
-    def __init__(self, manager):
-        JoinMatch.input_rect = pygame.Rect(Game.width // 2 - (Game.height/5)/2, Game.height // 2 - 50, Game.height/5, 50)
-        JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
-
-        JoinMatch.boton_rect = pygame.Rect(Game.width // 2 + (Game.height/5)/2, Game.height // 2 - 50, 100, 50)
-        JoinMatch.boton_ingresar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
-
-        JoinMatch.hide_input()
-
-    def draw(self):
-
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
-        Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
-
-        ClockAnimation.draw()
-
-        if JoinMatch.show_ingresar_btn:
-            Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
-
-    @staticmethod
-    def show_input():
-        JoinMatch.input_texto.show()
-        JoinMatch.boton_ingresar.show()
-
-    @staticmethod
-    def hide_input():
-        JoinMatch.input_texto.hide()
-        JoinMatch.boton_ingresar.hide()
-
-
-"""class Chat:
-
-    def __init__(self) -> None:
-        pass
-
-    show_chat = False"""
-
-
-class ClockAnimation:
-
-    direction = 0
-
-    show_clock_animation = False
-
-    clock_animation_ite = 0
-
-    def __init__(self) -> None:
-        pass
-
-    def draw():
-        if ClockAnimation.show_clock_animation:
-            if 0 <= ClockAnimation.clock_animation_ite < 40:
-                i = 0
-            if 40 <= ClockAnimation.clock_animation_ite < 60:
-                i = 1
-            if 60 <= ClockAnimation.clock_animation_ite < 80:
-                i = 2
-            if 80 <= ClockAnimation.clock_animation_ite < 100:
-                i = 3
-            if 100 <= ClockAnimation.clock_animation_ite <= 140:
-                i = 4
-            Game.screen.blit(Media.sized[f"clk_{i}"], (Media.metrics[f"clk_{i}"]["x"], Media.metrics[f"clk_{i}"]["y"]))
-            if ClockAnimation.clock_animation_ite <= 0:
-                ClockAnimation.direction = 1
-            elif ClockAnimation.clock_animation_ite >= 140:
-                ClockAnimation.direction = -1
-
-            ClockAnimation.clock_animation_ite += ClockAnimation.direction
-
-        else:
-            ClockAnimation.clock_animation_ite = 0
 
 
 class Cursor:
