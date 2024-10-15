@@ -74,6 +74,8 @@ selected_piece = None
 current_turn = None
 
 online_set_up_done = False
+global port_opened
+port_opened = False
 
 global just_clicked
 just_clicked = False
@@ -99,7 +101,7 @@ intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video
 
 def setup():
 
-    global piece_selection_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -116,6 +118,7 @@ def setup():
     piece_selection_menu = clases.Piece_Selection_Menu()
     configuration_menu = clases.Configuration_Menu()
     profile_menu = clases.Profile_Menu()
+    chat_menu = clases.Chat()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -426,6 +429,8 @@ def draw_ingame():
 
     game.screen.blit(Media.backgrounds[selected_background], (0, 0))  # displaying background
 
+    game.screen.blit(Media.sized["chat_btn"], (Media.metrics["chat_btn"]["x"], Media.metrics["chat_btn"]["y"]))
+
     mini_flag.draw(current_turn)
     turn_btn.draw()
 
@@ -471,6 +476,9 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
         draw_ingame()
         piece_selection_menu.draw(my_team)
+
+    if active_uis["chat"]:
+        chat_menu.draw()
 
     if active_uis["configuration_ui"]:
         configuration_menu.draw()
@@ -642,6 +650,9 @@ while True:  # Main loop
                 elif collidepoint_with_sound(Media.rects["minimize_btn"]["rect"], event.pos):  # check if btn was clicked
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
                     window.minimize()  # minimize the window
+
+                elif check_ui_allowance(Media.rects["chat_btn"]) and collidepoint_with_sound(Media.rects["chat_btn"]["rect"], event.pos):  # check if btn was clicked
+                    active_uis["chat"] = not active_uis["chat"]
 
                 elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()

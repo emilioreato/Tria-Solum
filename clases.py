@@ -538,7 +538,16 @@ class Chat:
     def __init__(self) -> None:
         pass
 
-    show_chat = False
+    @staticmethod
+    def draw():
+        Game.screen.blit(Media.sized["chat_ui"], (Media.metrics["chat_ui"]["x"], Media.metrics["chat_ui"]["y"]))
+
+
+class Warning:
+
+    @staticmethod
+    def draw():
+        Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"], Media.metrics["warning_ui"]["y"]))
 
 
 class ClockAnimation:

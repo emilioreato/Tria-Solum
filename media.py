@@ -33,6 +33,7 @@ class Media:
             "setting_btn": pygame.image.load("resources\\icons\\setting.png").convert_alpha(),
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
             "copy_btn": pygame.image.load("resources\\icons\\paperclip_copy.png").convert_alpha(),
+            "chat_btn": pygame.image.load("resources\\icons\\chat.png").convert_alpha(),
 
             "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar2.png").convert_alpha(),
             "enemy_bar": pygame.image.load("resources\\images\menu\\enemy_bar3.png").convert_alpha(),
@@ -43,12 +44,13 @@ class Media:
             "clk_3": pygame.image.load("resources\\icons\\clock\\3.png").convert_alpha(),
             "clk_4": pygame.image.load("resources\\icons\\clock\\4.png").convert_alpha(),
 
-            "chat": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
+            "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
             "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
             "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
             "perfil_ui": pygame.image.load("resources\\images\\menu\\perfil_ui.png").convert(),
+            "warning_ui": pygame.image.load("resources\\images\\menu\\warning.png").convert(),
 
             "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
 
@@ -97,6 +99,7 @@ class Media:
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": ("ingame", "match_creation", "join_match", "match_creation_ready", "join_match_ready")},
             "music_btn": {"x": height/1.972, "y": height / 2.351, "w": height / 28, "h": height / 28, "use_rect_in": "configuration_ui"},
             "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
+            "chat_btn": {"x": height/2, "y": height / 30, "w": height / 24, "h": height / 24, "use_rect_in": "ingame"},
 
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
             "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
@@ -107,12 +110,14 @@ class Media:
             "clk_3": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_4": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
 
-            "chat": {"x": height/0.693, "y":  height / 6.83, "w": (height*(1280/1080)) / (1.6), "h": height / 1.6, "make_rect": False},
+            "chat_ui": {"x": height/0.8, "y":  height / 6.83, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
             "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
             "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "perfil_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+            "warning_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4},
+
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
