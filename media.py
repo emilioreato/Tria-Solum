@@ -48,9 +48,14 @@ class Media:
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
             "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
+            "perfil_ui": pygame.image.load("resources\\images\\menu\\perfil_ui.png").convert(),
 
             "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
 
+            "perfil_btn": pygame.image.load("resources\\images\\menu\\perfil.png").convert(),
+            "seleccionar_foto_btn": pygame.image.load("resources\\images\\menu\\seleccionar_foto.png").convert(),
+            "guardar_apodo_btn": pygame.image.load("resources\\images\\menu\\guardar_apodo.png").convert(),
+            "guardar_lema_btn": pygame.image.load("resources\\images\\menu\\guardar_lema.png").convert(),
             "volver_btn": pygame.image.load("resources\\images\\menu\\volver.png").convert(),
             "crear_btn": pygame.image.load("resources\\images\\menu\\crear.png").convert(),
             "unirse_btn": pygame.image.load("resources\\images\\menu\\unirse.png").convert(),
@@ -107,15 +112,20 @@ class Media:
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
             "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+            "perfil_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
-            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "match_creation_ready", "join_match_ready", "configuration_ui")},
+            "perfil_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "lobby"},
+            "seleccionar_foto_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.4, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.2, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "guardar_lema_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "profile", "match_creation_ready", "join_match_ready", "configuration_ui")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
             "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.1, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
             "ingresar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.8, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation_ready", "join_match_ready")},
-            "configuration_btn": {"x": width/2-((height*(1280/222))/28)/2, "y":  height/1.7, "w": (height*(1280/222))/28, "h": height/28, "use_rect_in": "lobby"},
+            "configuration_btn": {"x": width/2-((height*(1280/222))/32)-height/32, "y":  height/1.7, "w": (height*(1280/222))/32, "h": height/32, "use_rect_in": "lobby"},
         }
 
     def resize(height):

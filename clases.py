@@ -69,11 +69,7 @@ class Game:
         Game.timer = pygame.time.Clock()  # create a clock object to set fps
         Game.dev_mode = EnumDisplaySettings(None, ENUM_CURRENT_SETTINGS)  # get the OS's fps setting
 
-    def convert_img(image, mode="default"):  # a function used to convert the images to the pygame format. you can choose between normal or alpha mode
-        if mode == "alpha":
-            return image.convert_alpha()
-        return image.convert()
-
+    @staticmethod
     def open_file_dialog():  # create an pyqt app to select the profile picture file
         app = QApplication(sys.argv)
         options = QFileDialog.Options()
@@ -429,6 +425,7 @@ class Lobby:
         Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
         Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
         Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
+        Game.screen.blit(Media.sized["perfil_btn"], (Media.metrics["perfil_btn"]["x"], Media.metrics["perfil_btn"]["y"]))
 
 
 class MatchCreation:
@@ -523,6 +520,17 @@ class Configuration_Menu:
     def draw():
 
         Game.screen.blit(Media.sized["configuration_ui"], (Media.metrics["configuration_ui"]["x"], Media.metrics["configuration_ui"]["y"]))
+
+
+class Profile_Menu:
+
+    @staticmethod
+    def draw():
+        Game.screen.blit(Media.sized["perfil_ui"], (Media.metrics["perfil_ui"]["x"], Media.metrics["perfil_ui"]["y"]))
+
+        Game.screen.blit(Media.sized["seleccionar_foto_btn"], (Media.metrics["seleccionar_foto_btn"]["x"], Media.metrics["seleccionar_foto_btn"]["y"]))
+        Game.screen.blit(Media.sized["guardar_apodo_btn"], (Media.metrics["guardar_apodo_btn"]["x"], Media.metrics["guardar_apodo_btn"]["y"]))
+        Game.screen.blit(Media.sized["guardar_lema_btn"], (Media.metrics["guardar_lema_btn"]["x"], Media.metrics["guardar_lema_btn"]["y"]))
 
 
 class Chat:

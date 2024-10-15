@@ -60,6 +60,7 @@ active_uis = {
     "configuration_ui": False,
     "chat": False,
     "donations": False,
+    "profile": False,
 }
 
 my_pieces = []
@@ -74,9 +75,9 @@ current_turn = None
 
 online_set_up_done = False
 
-just_clicked_smth = False
 global just_clicked
 just_clicked = False
+just_clicked_smth = False
 
 global typing
 typing = False
@@ -98,7 +99,7 @@ intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video
 
 def setup():
 
-    global piece_selection_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -114,6 +115,7 @@ def setup():
     join_match = clases.JoinMatch(manager)
     piece_selection_menu = clases.Piece_Selection_Menu()
     configuration_menu = clases.Configuration_Menu()
+    profile_menu = clases.Profile_Menu()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -122,9 +124,9 @@ def setup():
     cursor = clases.Cursor()
 
 
-def set_up_online(mode):  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
+def set_up_ports_and_firewall(check_again=False):
 
-    global port, conection_state
+    global port, conection_state, port_opened
     port = 8050  # this port seems to work pretty well
     firewall.FirewallRules.check_firewall_installation_status('installation_status.txt', port)
 
@@ -134,6 +136,18 @@ def set_up_online(mode):  # this function sets up the server and client objects 
     portforwarding.Portforwarding.initialize()
     if not portforwarding.Portforwarding.check_ports(port):
         portforwarding.Portforwarding.open_port(local_ip, port, port, "TCP")
+
+    if check_again:
+        if portforwarding.Portforwarding.check_ports(port):
+            port_opened = True
+
+
+def set_up_online(mode):  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
+
+    if not port_opened:
+        set_up_ports_and_firewall()
+
+    global conection_state
 
     if mode == "client":
         global sckt
@@ -439,6 +453,9 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     elif active_uis["lobby"]:
         lobby.draw()
 
+    elif active_uis["profile"]:
+        profile_menu.draw()
+
     elif active_uis["match_creation"] or active_uis["match_creation_ready"]:
 
         if active_uis["match_creation_ready"]:
@@ -487,6 +504,10 @@ window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program win
 manager = pygame_gui.UIManager((game.width, game.height))
 manager.ui_theme.cursor_blink_time = 0.5
 
+try:  # we try opening the ports as soon as possible so the user doesnt waste time.
+    threading.Thread(target=set_up_ports_and_firewall, args=(True,), daemon=True).start()
+except:
+    pass
 
 start_time = time.time()  # varibles needed to record fps  # Record the starting time
 loop_count = 0
@@ -496,10 +517,8 @@ pygame.mixer.init()
 if active_uis["intro"]:
     pygame.mixer.music.set_volume(0.6)
     # THE INTRO VIDEO IS PLAYED WHILE SETTING OTHER "HEAVY" THINGS UP
-    video_t = threading.Thread(target=play_intro_video)
-    audio_t = threading.Thread(target=play_intro_audio)
-    video_t.start()
-    audio_t.start()
+    threading.Thread(target=play_intro_video).start()
+    threading.Thread(target=play_intro_audio).start()
 
     # SETTING SOME THINGS
     setup()
@@ -624,7 +643,7 @@ while True:  # Main loop
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
                     window.minimize()  # minimize the window
 
-                elif collidepoint_with_sound(Media.rects["tengo q  agregar el menu personal donde eleccionar todo"]["rect"], event.pos):  # check if btn was clicked
+                elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()
 
                 elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clicked
@@ -657,8 +676,11 @@ while True:  # Main loop
                         active_uis[uis] = False
                     active_uis["configuration_ui"] = True
 
-                elif check_ui_allowance(Media.rects["crear_btn"]) and collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
+                elif check_ui_allowance(Media.rects["perfil_btn"]) and collidepoint_with_sound(Media.rects["perfil_btn"]["rect"], event.pos):
+                    active_uis["lobby"] = False
+                    active_uis["profile"] = True
 
+                elif check_ui_allowance(Media.rects["crear_btn"]) and collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
                     active_uis["lobby"] = False
                     active_uis["match_creation"] = True
 
@@ -708,6 +730,10 @@ while True:  # Main loop
                     elif active_uis["configuration_ui"]:
                         active_uis["lobby"] = True
                         active_uis["configuration_ui"] = False
+
+                    elif active_uis["profile"]:
+                        active_uis["lobby"] = True
+                        active_uis["profile"] = False
 
                     clases.ClockAnimation.set_animation_status(False)
 
