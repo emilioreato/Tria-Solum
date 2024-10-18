@@ -101,7 +101,7 @@ intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video
 
 def setup():
 
-    global piece_selection_menu, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -119,6 +119,7 @@ def setup():
     configuration_menu = clases.Configuration_Menu()
     profile_menu = clases.Profile_Menu()
     chat_menu = clases.Chat()
+    warning_manager = clases.Warning()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -384,7 +385,7 @@ def collidepoint_with_sound(rect, point_pos):  # a modified version of collidepo
     collided = rect.collidepoint(point_pos)
 
     if collided:
-        sound_player.play_sfx(sound_player.SFX[1])
+        sound_player.play_sfx(sound_player.SFX[0])
         global just_clicked_smth
         just_clicked_smth = True
         return True
@@ -394,7 +395,7 @@ def collidepoint_with_sound(rect, point_pos):  # a modified version of collidepo
 def get_at_with_sound(rect, relative_pos):  # the same as collidepoint_with_sound() but for irregular images
     collided = rect.get_at(relative_pos)
     if collided:
-        sound_player.play_sfx(sound_player.SFX[1])
+        sound_player.play_sfx(sound_player.SFX[0])
         global just_clicked_smth
         just_clicked_smth = True
         return True
@@ -487,6 +488,8 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns (allways displayed)
     game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
     game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
+
+    clases.Warning.draw()
 
     if check_ui_allowance(Media.rects["configuration_btn"]):
         game.screen.blit(Media.sized["configuration_btn"], (Media.metrics["configuration_btn"]["x"], Media.metrics["configuration_btn"]["y"]))
@@ -785,7 +788,7 @@ while True:  # Main loop
                     if active_uis["piece_selection"]:  # if the player is creating is alignment of pieces then dont consume their mana
                         change_mana = False
 
-                    sound_player.play_sfx(sound_player.SFX[5])  # play the sound for when a piece is dropped on the board
+                    sound_player.play_sfx(sound_player.SFX[1])  # play the sound for when a piece is dropped on the board
 
                     which_point = active_pieces[selected_piece].detect_closest_point(event.pos)  # event pos is the mouse position at the moment of the event
                     gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
@@ -886,7 +889,8 @@ while True:  # Main loop
                     clases.ClockAnimation.set_animation_status(True, "join_match")
 
                 else:
-                    print("Invalid key address")
+                    clases.Warning.warn("Clave Inválida", "La clave de partida introducida no es válida ya que no sigue el formato x.x.x.x", 5)
+                    print()
 
         if (ite2 >= 10) or just_clicked:
 

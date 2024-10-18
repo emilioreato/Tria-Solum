@@ -15,6 +15,7 @@ from online_utilities import online_tools
 import pygame_gui
 import sys
 from PyQt5.QtWidgets import QApplication, QFileDialog
+import time
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directory to the file's directory
@@ -24,7 +25,8 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))  # sets the current directo
 
 class Game:
 
-    GRIS_OSCURO = (20, 21, 23)
+    DARK_GREY = (20, 21, 23)
+    LIGHT_GREY = (89, 90, 91)
 
     board_size = 8
     center_points = []
@@ -456,7 +458,7 @@ class MatchCreation:
 
     def render_ip_text():
         font = pygame.font.Font(None, Game.height//34)
-        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.GRIS_OSCURO)
+        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.DARK_GREY)
         MatchCreation.ip_text_rect = MatchCreation.ip_text.get_rect(center=(Game.width/2,  Game.height/1.98))
 
 
@@ -545,9 +547,34 @@ class Chat:
 
 class Warning:
 
+    show_warning = False
+    duration = 1
+    text_line_length = 28
+
+    def __init__(self) -> None:
+        Warning.font = pygame.font.Font(None, Game.height//24)
+        Warning.font2 = pygame.font.Font(None, Game.height//34)
+
     @staticmethod
     def draw():
-        Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"], Media.metrics["warning_ui"]["y"]))
+        if Warning.show_warning:
+            Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"], Media.metrics["warning_ui"]["y"]))
+            Game.screen.blit(Warning.title, (Media.metrics["warning_ui"]["x"]+Game.height/12, Media.metrics["warning_ui"]["y"]+Game.height/40))
+            Game.screen.blit(Warning.message, (Game.height/20, Game.height/1.18))
+            if time.time() - Warning.init_time > Warning.duration:
+                Warning.show_warning = False
+
+    @ staticmethod
+    def warn(title, message, duration):
+        Warning.title = Warning.font.render(title, True, Game.LIGHT_GREY)
+        Warning.message = Warning.font2.render('\n'.join([message[i:i+Warning.text_line_length] for i in range(0, len(message), Warning.text_line_length)]), True, Game.LIGHT_GREY)
+        Warning.duration = duration
+        Warning.show_warning = True
+        Warning.init_time = time.time()
+        try:
+            Sound.play_sfx(Sound.SFX[2])
+        except:
+            pass
 
 
 class ClockAnimation:
@@ -752,6 +779,6 @@ class Cursor:
     def __init__(self):
         Cursor.image = Media.sized["cursor_default"]
 
-    @staticmethod
+    @ staticmethod
     def draw():
         Game.screen.blit(Cursor.image, pygame.mouse.get_pos())

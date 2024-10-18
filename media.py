@@ -50,7 +50,7 @@ class Media:
             "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
             "perfil_ui": pygame.image.load("resources\\images\\menu\\perfil_ui.png").convert(),
-            "warning_ui": pygame.image.load("resources\\images\\menu\\warning.png").convert(),
+            "warning_ui": pygame.image.load("resources\\images\\menu\\warning.png").convert_alpha(),
 
             "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
 
@@ -116,7 +116,7 @@ class Media:
             "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "perfil_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
-            "warning_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4},
+            "warning_ui": {"x": width/48, "y":  height/1.345, "w": (height*(1280/615))/4.5, "h": height/4.5, "use_rect_in": "all"},
 
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
