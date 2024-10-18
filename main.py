@@ -95,9 +95,20 @@ current_volume = 0
 
 intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
               "audio": "resources\\intro\\intro_audio.mp3"}
+"""
+deck = clases.Deck()
+deck.shuffle_deck()  # Barajar el mazo
 
+inventory = clases.Inventory()
+inventory.refill_inventory(deck)  # Rellenar el inventario
+
+print("Contenido del inventario:")
+for card_type, cards in inventory.cards.items():
+    print(f"{card_type}: {[card.name for card in cards]}")
+"""
 
 # USEFUL FUNCTIONS
+
 
 def setup():
 
@@ -890,7 +901,6 @@ while True:  # Main loop
 
                 else:
                     clases.Warning.warn("Clave Inválida", "La clave de partida introducida no es válida ya que no sigue el formato x.x.x.x", 5)
-                    print()
 
         if (ite2 >= 10) or just_clicked:
 

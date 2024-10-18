@@ -6,7 +6,7 @@ import pyautogui
 import threading
 import wave
 import pyaudio
-from media import Media
+from media import Media, Fonts
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
 import random
@@ -59,9 +59,11 @@ class Game:
                 Game.center_points.append(new_point)
 
     def set_up_window(self, screenratio=1, with_frame=0):  # is the ratio screen/window
+
         _, Game.screen_height = pyautogui.size()  # gets the current resolution
         Game.height = round(Game.screen_height/screenratio)  # reduces the height
         Game.width = round(Game.height*(16/9))  # sets the aspect ratio to 16:9
+
         Game.screen = pygame.display.set_mode((Game.width, Game.height), with_frame)  # sets window resolution
 
         pygame.display.set_caption("Gambit Game 2024®")  # set a window title
@@ -77,6 +79,10 @@ class Game:
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(None, "Selecciona un archivo", "", "Todos los Archivos (*);;Archivos de Texto (*.txt)", options=options)
         return file_path
+
+    @staticmethod
+    def smooth_movement(x, n=2):
+        return (x**n) / (x**n + 1)
 
 
 class Sound:
@@ -117,9 +123,6 @@ class Sound:
         filtered_playlist = [song for song in Sound.PLAYLIST if song not in Sound.generated_tracks]  # selec a random song from playlist that has not been selected yet
 
         track = random.choice(filtered_playlist)
-
-        if track in Sound.generated_tracks:
-            print("not working")
 
         Sound.generated_tracks.append(track)
 
@@ -412,6 +415,113 @@ class Knight(Piece):
             self.original_image = Media.bare_imgs["red_knight"]
             self.image = Media.sized["red_knight"]
 
+# ingame objects classes
+
+
+class Cards:
+    def __init__(self, x, y, name, cost, damage, distance, duration, effect, can_hit_self=False, can_hit_tiles=False, can_hit_allys=False, can_hit_enemies=False):
+        self.x = x  # position on the screen
+        self.y = y  # position on the screen
+        self.name = name
+        self.cost = cost
+        self.damage = damage
+        self.distance = distance
+        self.duration = duration
+        self.effect = effect
+        self.can_hit_self = can_hit_self
+        self.can_hit_tiles = can_hit_tiles
+        self.can_hit_allys = can_hit_allys
+        self.can_hit_enemies = can_hit_enemies
+
+    def can_use_card(self, target, caster):
+        """Verifica si la carta puede ser utilizada en el objetivo dado las reglas."""
+        distance_to_target = self.calculate_distance(caster, target)
+
+        # Verificar si el objetivo está a la distancia permitida
+        if distance_to_target > self.distance:
+            print(f"El objetivo está fuera de alcance. Distancia máxima: {self.distance}.")
+            return False
+
+        # Verificar si puede golpear al objetivo correcto (enemigos, aliados, etc.)
+        if target == caster and not self.can_hit_self:
+            print(f"No puedes usar {self.name} en ti mismo.")
+            return False
+
+        if target.is_tile and not self.can_hit_tiles:
+            print(f"{self.name} no puede ser usada en baldosas vacías.")
+            return False
+
+        if target.is_ally(caster) and not self.can_hit_allys:
+            print(f"{self.name} no puede afectar a aliados.")
+            return False
+
+        if target.is_enemy(caster) and not self.can_hit_enemies:
+            print(f"{self.name} no puede afectar a enemigos.")
+            return False
+
+        return True
+
+
+class Deck:
+    def __init__(self):
+        self.cards = {
+            "knight": [],
+            "mage": [],
+            "archer": [],
+            "neutral": []
+        }
+        self.create_deck()
+
+    def create_deck(self):  # creates the deck with all the cards # have yet to make the cards
+
+        knight_card = Cards(x=0, y=0, name="Espada", cost=1, damage=5, distance=1, duration=0, effect="Causa daño", can_hit_self=False)
+        knight_card2 = Cards(x=0, y=0, name="salto", cost=1, damage=5, distance=1, duration=0, effect="Causa daño", can_hit_self=False)
+        mage_card = Cards(x=0, y=0, name="Magia", cost=2, damage=7, distance=3, duration=0, effect="Causa daño", can_hit_self=False)
+        archer_card = Cards(x=0, y=0, name="Flecha", cost=1, damage=3, distance=2, duration=0, effect="Causa daño", can_hit_self=False)
+        neutral_card = Cards(x=0, y=0, name="Curación", cost=2, damage=0, distance=1, duration=2, effect="Recupera vida", can_hit_self=True)
+
+        for _ in range(4):  # Crear 4 duplicados por carta, entre parentesis va la cantidad de cartas que queres que haya en el mazo
+            self.cards["knight"].append(knight_card)
+            self.cards["knight"].append(knight_card2)
+            self.cards["mage"].append(mage_card)
+            self.cards["archer"].append(archer_card)
+            self.cards["neutral"].append(neutral_card)
+
+    def shuffle_deck(self):
+        for card_type in self.cards:
+            random.shuffle(self.cards[card_type])
+
+    def draw_card(self, card_type):
+        if self.cards[card_type]:
+            return self.cards[card_type].pop(0)  # Devuelve la primera carta del tipo solicitado
+        else:
+            print(f"No hay más cartas de tipo {card_type}.")
+            return None
+
+
+class Inventory:
+    def __init__(self):
+        self.cards = {
+            "knight": [],
+            "mage": [],
+            "archer": [],
+            "neutral": []
+        }
+
+    def add_card(self, card, card_type):
+        if len(self.cards[card_type]) < 3:
+            self.cards[card_type].append(card)
+        else:
+            print(f"No puedes tener más de 3 cartas de tipo {card_type}.")
+
+    def refill_inventory(self, deck):
+        for card_type in self.cards:
+            while len(self.cards[card_type]) < 3:
+                new_card = deck.draw_card(card_type)
+                if new_card:
+                    self.add_card(new_card, card_type)
+                else:
+                    break  # Salir si no hay más cartas para robar
 
 # UI CLASSES
 
@@ -550,31 +660,52 @@ class Warning:
     show_warning = False
     duration = 1
     text_line_length = 28
+    played_sound = False
 
     def __init__(self) -> None:
-        Warning.font = pygame.font.Font(None, Game.height//24)
-        Warning.font2 = pygame.font.Font(None, Game.height//34)
+        pass
 
     @staticmethod
     def draw():
+
         if Warning.show_warning:
-            Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"], Media.metrics["warning_ui"]["y"]))
-            Game.screen.blit(Warning.title, (Media.metrics["warning_ui"]["x"]+Game.height/12, Media.metrics["warning_ui"]["y"]+Game.height/40))
-            Game.screen.blit(Warning.message, (Game.height/20, Game.height/1.18))
+            """
+            old code:
+            # this following 4 lines calculate the x offset for the whole warning image and text so it makes a cool looking animation. we use smooth_movent() to transform lineal time to a curve.
+            # animation_duration = Warning.duration*0.25  # this sets the duration of the movemnt to 25% of the total duration of the warning
+            # current_time = numpy.interp(time.time()-Warning.init_time, [0, animation_duration], [0, Warning.duration])  # i think there is another way of doing this but it makes
+            """
+            if not Warning.played_sound and time.time()-Warning.init_time > Warning.duration*0.025:  # this is the duration of the movement of the warning image and text
+
+                try:
+                    Sound.play_sfx(Sound.SFX[2])
+                    Warning.played_sound = True
+                except:
+                    pass
+
+            animation_duration = Warning.duration*0.16  # the duration of the animation is 16% of the total duration of  the warning
+            if animation_duration > 2:  # and it has a max value of two seconds
+                animation_duration = 2
+
+            current_time = numpy.interp(time.time()-Warning.init_time, [0, animation_duration], [0, 3])  # this tells that the 25% of the duration of the warning is the duration of the movement and it scales it to a (0-3) range 3 being the end of the curve based on the visualisation of the formula of smooth_movement().
+            coeficient = Game.smooth_movement(current_time, 3)  # this 3 is the power of the curve and how fast it moves.
+            x_anim = numpy.interp(coeficient, [0, 1], [0-Media.metrics["warning_ui"]["w"]*1.1, 0])  # this is the actual offset of the image and text and we multiply the width by 1.1 so it moves a little bit more than the width of the image away of the screen
+
+            Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"] + x_anim, Media.metrics["warning_ui"]["y"]))
+            Game.screen.blit(Warning.title, (Media.metrics["warning_ui"]["x"]+Game.height/12 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/40))
+            Game.screen.blit(Warning.message, (Media.metrics["warning_ui"]["x"]+Game.height/40 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/13.2))
             if time.time() - Warning.init_time > Warning.duration:
                 Warning.show_warning = False
 
     @ staticmethod
     def warn(title, message, duration):
-        Warning.title = Warning.font.render(title, True, Game.LIGHT_GREY)
-        Warning.message = Warning.font2.render('\n'.join([message[i:i+Warning.text_line_length] for i in range(0, len(message), Warning.text_line_length)]), True, Game.LIGHT_GREY)
+
+        Warning.title = Fonts.warning_title_font.render(title, True, Game.LIGHT_GREY)
+        Warning.message = Fonts.warning_messsage_font.render(Fonts.insertar_salto_linea_sin_cortar_palabras(message, 40), True, Game.LIGHT_GREY)
         Warning.duration = duration
         Warning.show_warning = True
+        Warning.played_sound = False
         Warning.init_time = time.time()
-        try:
-            Sound.play_sfx(Sound.SFX[2])
-        except:
-            pass
 
 
 class ClockAnimation:

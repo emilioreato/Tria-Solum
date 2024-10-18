@@ -71,6 +71,12 @@ class Media:
     def resize_metrics(height):
         width = height*(16/9)
 
+        Media.fonts_metrics = {
+            "warning_title_font": height//30,
+            "warning_messsage_font": height//44,
+        }
+        Fonts.resize_fonts()
+
         Media.pieces_size = height/14
 
         Media.slider_metrics = (height/1.35, height / 2.25)
@@ -166,3 +172,34 @@ class Media:
     @staticmethod
     def scale(image, size_x, size_y):
         return pygame.transform.smoothscale(image, (size_x, size_y))
+
+
+class Fonts:
+
+    def resize_fonts():
+
+        Fonts.warning_title_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
+        Fonts.warning_messsage_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
+
+    def insertar_salto_linea_sin_cortar_palabras(texto, longitud_maxima):
+        palabras = texto.split()  # Dividir el texto en palabras
+        resultado = []
+        linea_actual = ""
+
+        for palabra in palabras:
+            # Si agregar la palabra a la línea actual no excede la longitud máxima
+            if len(linea_actual) + len(palabra) + 1 <= longitud_maxima:
+                if linea_actual:  # Si ya hay palabras en la línea, agregar un espacio antes
+                    linea_actual += " " + palabra
+                else:
+                    linea_actual = palabra
+            else:
+                # Si la palabra excede el límite, agregar la línea actual al resultado y empezar una nueva
+                resultado.append(linea_actual)
+                linea_actual = palabra
+
+        # Agregar la última línea si tiene contenido
+        if linea_actual:
+            resultado.append(linea_actual)
+
+        return "\n".join(resultado)
