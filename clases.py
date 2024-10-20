@@ -81,23 +81,29 @@ class Game:
         return file_path
 
     @staticmethod
-    def replace_line_in_txt(file, text_to_search, new_line, mode):
+    def replace_line_in_txt(file_path, text_to_search, new_line, mode):  # specific function to save user data and preferences in a txt file
 
-        with open(file, 'r') as file:
-            lines = file.readlines()
-
-        if mode == "read":
-            for line in lines:
-                if text_to_search in line:
-                    return line
+        if not os.path.exists(file_path):  # creates the file if it doesnt exist
+            with open(file_path, 'w') as file:
+                file.write("pfp: resources\\images\\indicator.png \nnickname: Invitado\nslogan: Clan anónimo")  # writes the default values
 
         else:
-            with open(file, 'w') as file:
+            with open(file_path, 'r') as file:
+                lines = file.readlines()
+
+            if mode == "read":
                 for line in lines:
                     if text_to_search in line:
-                        file.write(new_line + '\n')
-                    else:
-                        file.write(line)
+                        return line
+
+            else:
+                with open(file_path, 'w') as file:
+                    print("writing")
+                    for line in lines:
+                        if text_to_search in line:
+                            file.write(new_line + '\n')
+                        else:
+                            file.write(line)
 
     @staticmethod
     def smooth_movement(x, n=2):
@@ -671,10 +677,10 @@ class Profile_Menu:
 
     def __init__(self, manager):
         Profile_Menu.nickname_input = pygame.Rect()
-        Profile_Menu.nickname_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.input_rect, manager=manager)
+        Profile_Menu.nickname_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.nickname_input, manager=manager)
 
         Profile_Menu.slogan_input = pygame.Rect()
-        Profile_Menu.slogan_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.input_rect, manager=manager)
+        Profile_Menu.slogan_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.slogan_input, manager=manager)
 
         Profile_Menu.resize()
 

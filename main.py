@@ -128,7 +128,7 @@ def setup():
     join_match = clases.JoinMatch(manager)
     piece_selection_menu = clases.Piece_Selection_Menu()
     configuration_menu = clases.Configuration_Menu()
-    profile_menu = clases.Profile_Menu()
+    profile_menu = clases.Profile_Menu(manager)
     chat_menu = clases.Chat()
     warning_manager = clases.Warning()
     donations_menu = clases.Donation_Menu(manager)
@@ -630,6 +630,10 @@ while True:  # Main loop
 
                 just_clicked = True
 
+                if warning_manager.show_warning:  # this 3 lines of code let the user hide the shown warning if 20% of the total time of the warining have passed since it was shown by doing a click somewhere else on the screen
+                    if not Media.rects["warning_ui"]["rect"].collidepoint(event.pos) and time.time()-warning_manager.init_time > clases.Warning.duration*0.2:
+                        clases.Warning.show_warning = False
+
                 for piece in active_pieces:  # Checks if any piece was clicked
 
                     if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
@@ -684,16 +688,28 @@ while True:  # Main loop
 
                 elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()
+                    if selected_file_path.endswith('.png'):
+                        game.replace_line_in_txt("user_info\\data.txt", "pfp", f"pfp: {selected_file_path}", mode="write")
+                    else:
+                        clases.Warning.warn("Imágen inválida", "La imágen debe ser formato PNG y es recomendable que no supere una resolución de 512x512 [1:1].", 8)
 
                 elif check_ui_allowance(Media.rects["guardar_apodo_btn"]) and collidepoint_with_sound(Media.rects["guardar_apodo_btn"]["rect"], event.pos):  # check if btn was clicked
-                    entry = profile_menu.nickname_input.get_text()
-                    game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")
+                    entry = profile_menu.nickname_input.get_text().strip()
+                    profile_menu.nickname_input.set_text("")
+                    if re.search(r"^[A-Za-z0-9._\-]{5,12}$", entry):
+                        game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")
+                    else:
+                        clases.Warning.warn("Apodo inválido", "El apodo debe tener entre 5 y 12 caracteres y solo puede poseer los siguientes símbolos: (._-).", 8)
 
                 elif check_ui_allowance(Media.rects["guardar_lema_btn"]) and collidepoint_with_sound(Media.rects["guardar_lema_btn"]["rect"], event.pos):  # check if btn was clicked
-                    entry = profile_menu.nickname_input.get_text()
-                    game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")
+                    entry = profile_menu.slogan_input.get_text().strip()
+                    profile_menu.slogan_input.set_text("")
+                    if re.search(r"^[A-Za-z0-9._\-,;:]{3,30}$", entry):
+                        game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")
+                    else:
+                        clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer simbolos extraños.", 8)
 
-                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clicked
+                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clickeod
 
                     shrink_state = not shrink_state  # pulsator to conmutator logic
 
@@ -736,6 +752,8 @@ while True:  # Main loop
                 elif check_ui_allowance(Media.rects["perfil_btn"]) and collidepoint_with_sound(Media.rects["perfil_btn"]["rect"], event.pos):
                     active_uis["lobby"] = False
                     active_uis["profile"] = True
+                    clases.Profile_Menu.nickname_input.show()
+                    clases.Profile_Menu.slogan_input.show()
 
                 elif check_ui_allowance(Media.rects["crear_btn"]) and collidepoint_with_sound(Media.rects["crear_btn"]["rect"], event.pos):  # check if btn was clicked
                     active_uis["lobby"] = False
@@ -759,15 +777,15 @@ while True:  # Main loop
 
                 elif check_ui_allowance(Media.rects["copy_btn"]) and collidepoint_with_sound(Media.rects["copy_btn"]["rect"], event.pos):
                     pyperclip.copy(online_tools.Online.public_ip)
-                    clases.Warning.warn("Clave de partida copiada", "La clave de partida ha sido exitosamente copiada al portapapeles", 3, sound=False)
+                    clases.Warning.warn("Clave de partida copiada", "La clave de partida ha sido exitosamente copiada al portapapeles.", 3, sound=False)
 
                 elif check_ui_allowance(Media.useful_rects["wallet_btc"]) and collidepoint_with_sound(Media.useful_rects["wallet_btc"]["rect"], event.pos):
                     pyperclip.copy("bc1q3s6pxmt6dalfee05nr3wx3wtha2jxd680cfqzu")
-                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Bitcoin ha sido copiada al portapapeles", 3, sound=False)
+                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Bitcoin ha sido copiada al portapapeles.", 3, sound=False)
 
                 elif check_ui_allowance(Media.useful_rects["wallet_eth"]) and collidepoint_with_sound(Media.useful_rects["wallet_eth"]["rect"], event.pos):
                     pyperclip.copy("0x75e029dEE704ec1dA8a294c331B4009b49289d42")
-                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Ethereum ha sido copiada al portapapeles (red: ERC20)", 3,  sound=False)
+                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Ethereum ha sido copiada al portapapeles (red: ERC20).", 3,  sound=False)
 
                 elif check_ui_allowance(Media.rects["unirse_btn"]) and collidepoint_with_sound(Media.rects["unirse_btn"]["rect"], event.pos):
 
@@ -804,6 +822,8 @@ while True:  # Main loop
                     elif active_uis["profile"]:
                         active_uis["lobby"] = True
                         active_uis["profile"] = False
+                        clases.Profile_Menu.nickname_input.hide()
+                        clases.Profile_Menu.slogan_input.hide()
 
                     elif active_uis["donations"]:
                         active_uis["configuration"] = True
@@ -955,7 +975,7 @@ while True:  # Main loop
                     clases.ClockAnimation.set_animation_status(True, "join_match")
 
                 else:
-                    clases.Warning.warn("Clave Inválida", "La clave de partida introducida no es válida ya que no sigue el formato x.x.x.x", 5)
+                    clases.Warning.warn("Clave Inválida", "La clave de partida introducida no es válida ya que no sigue el formato x.x.x.x.", 5)
 
         if (ite2 >= 10) or just_clicked:
 

@@ -87,8 +87,8 @@ class Media:
                                     "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
                                     }
 
-        Media.profile_menu_metrics = {"nickname_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
-                                      "slogan_input": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
+        Media.profile_menu_metrics = {"nickname_input": {"x": height/1.81, "y": height / 2, "w": height/5, "h": 50},
+                                      "slogan_input": {"x": height/1.81, "y": height / 1.78, "w": height/50+80, "h": 50},
                                       }
 
         Media.useful_rects_metrics = {"wallet_btc": {"x": height/1.536, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
