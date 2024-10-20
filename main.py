@@ -57,7 +57,7 @@ active_uis = {
     "match_creation_ready": False,
     "piece_selection": False,
     "ingame": False,
-    "configuration_ui": False,
+    "configuration": False,
     "chat": False,
     "donations": False,
     "profile": False,
@@ -112,7 +112,7 @@ for card_type, cards in inventory.cards.items():
 
 def setup():
 
-    global piece_selection_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -131,6 +131,7 @@ def setup():
     profile_menu = clases.Profile_Menu()
     chat_menu = clases.Chat()
     warning_manager = clases.Warning()
+    donations_menu = clases.Donation_Menu(manager)
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -464,6 +465,9 @@ def draw_ingame():
 
 def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
 
+    if not active_uis["ingame"]:
+        game.screen.blit(Media.sized["lobby_background"], (0, 0))
+
     if active_uis["ingame"]:
         draw_ingame()
 
@@ -485,6 +489,9 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     elif active_uis["join_match"] or active_uis["join_match_ready"]:
         join_match.draw()
 
+    elif active_uis["donations"]:
+        donations_menu.draw()
+
     if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
         draw_ingame()
         piece_selection_menu.draw(my_team)
@@ -492,7 +499,7 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     if active_uis["chat"]:
         chat_menu.draw()
 
-    if active_uis["configuration_ui"]:
+    if active_uis["configuration"]:
         configuration_menu.draw()
         slider_menu.run(show_music=True)
 
@@ -548,17 +555,16 @@ if active_uis["intro"]:
     # ONCE IT FINISHES LOADING EVERYTHING IT WAITS FOR THE VIDEO TO END
     while active_uis["intro"] == True:
         time.sleep(0.05)
-    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.set_volume(0.3)
 else:
-    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.set_volume(0.3)
     setup()
 
 set_mouse_usage(True, False)
 # set_mouse_usage(False, True)
 active_uis["lobby"] = True
 
-UI_REFRESH_RATE = pygame.time.Clock().tick(fps)/1000
-# UI_REFRESH_RATE = game.timer.tick(fps)/1000
+UI_REFRESH_RATE = pygame.time.Clock().tick(fps)/1000  # UI_REFRESH_RATE = game.timer.tick(fps)/1000
 
 
 for song in sound_player.UI_SONGS:  # plays and specefically selects the song that should be played in the lobby
@@ -595,13 +601,15 @@ while True:  # Main loop
             if just_clicked_smth:
                 event.pos = pygame.mouse.get_pos()
 
-            if (ite1 >= 12 or just_clicked_smth):  # just_clicked_smth is used because you want to proccess the new cursor image as soon as possible after you clike a btn meaning the ui might have changed and there would be no longer a botton in that same spot
+            if (ite1 >= 8 or just_clicked_smth):  # just_clicked_smth is used because you want to proccess the new cursor image as soon as possible after you clike a btn meaning the ui might have changed and there would be no longer a botton in that same spot
                 just_clicked_smth = False
                 ite1 = 0
+
                 clases.Cursor.image = Media.sized["cursor_default"]
-                for values in Media.rects.values():
-                    rect = values["rect"]
-                    use_in = values["use_rect_in"]
+
+                for values in Media.fused_rect_list:
+                    rect = values[1]["rect"]
+                    use_in = values[1]["use_rect_in"]
 
                     if type(use_in) == tuple:    # if the btn is used in multiple uis, it checks if the current ui is active then checks if the btn is being hovered and if it is, it changes the cursor image to a hand
                         for possible_use in use_in:
@@ -658,9 +666,15 @@ while True:  # Main loop
                             print("changed turn")
 
                 if check_ui_allowance(Media.rects["setting_btn"]) and collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
-                    active_uis["configuration_ui"] = not active_uis["configuration_ui"]
+                    active_uis["configuration"] = not active_uis["configuration"]
+                    if active_uis["join_match"] or active_uis["join_match_ready"]:
+                        join_match.show_input()
+                    if active_uis["configuration"]:
+                        join_match.hide_input()
+
                 elif collidepoint_with_sound(Media.rects["x_btn"]["rect"], event.pos):  # check if btn was clicked
                     finish_program()
+
                 elif collidepoint_with_sound(Media.rects["minimize_btn"]["rect"], event.pos):  # check if btn was clicked
                     window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the game window in the OS
                     window.minimize()  # minimize the window
@@ -671,6 +685,14 @@ while True:  # Main loop
                 elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()
 
+                elif check_ui_allowance(Media.rects["guardar_apodo_btn"]) and collidepoint_with_sound(Media.rects["guardar_apodo_btn"]["rect"], event.pos):  # check if btn was clicked
+                    entry = profile_menu.nickname_input.get_text()
+                    game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")
+
+                elif check_ui_allowance(Media.rects["guardar_lema_btn"]) and collidepoint_with_sound(Media.rects["guardar_lema_btn"]["rect"], event.pos):  # check if btn was clicked
+                    entry = profile_menu.nickname_input.get_text()
+                    game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")
+
                 elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clicked
 
                     shrink_state = not shrink_state  # pulsator to conmutator logic
@@ -679,27 +701,37 @@ while True:  # Main loop
 
                         window.moveTo(game.width//6, game.height//7)  # move the window
                         game.set_up_window(1.4)
+
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
                         clases.Piece.resize(active_pieces)
                         set_mouse_usage(True, False)
 
+                        join_match.resize()
+
                     else:
 
                         game.set_up_window(1, pygame.NOFRAME)
                         window.moveTo(0, 0)
+
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
                         clases.Piece.resize(active_pieces)
                         set_mouse_usage(False, True)
 
+                        join_match.resize()
+
                 # GOING THROUGH THE MENUS
                 elif check_ui_allowance(Media.rects["configuration_btn"]) and collidepoint_with_sound(Media.rects["configuration_btn"]["rect"], event.pos):
                     for uis in active_uis:
                         active_uis[uis] = False
-                    active_uis["configuration_ui"] = True
+                    active_uis["configuration"] = True
+
+                elif check_ui_allowance(Media.rects["apoyanos_btn"]) and collidepoint_with_sound(Media.rects["apoyanos_btn"]["rect"], event.pos):
+                    active_uis["configuration"] = False
+                    active_uis["donations"] = True
 
                 elif check_ui_allowance(Media.rects["perfil_btn"]) and collidepoint_with_sound(Media.rects["perfil_btn"]["rect"], event.pos):
                     active_uis["lobby"] = False
@@ -713,6 +745,11 @@ while True:  # Main loop
 
                     clases.ClockAnimation.set_animation_status(True, "match_creation")
 
+                    for song in sound_player.UI_SONGS:  # plays and specefically selects the song that should be played in the match creation menu
+                        if "(searching match)" in song:
+                            sound_player.play(song)
+                            break
+
                     if (play_online):
                         threading.Thread(target=set_up_online, args=("server",), daemon=True).start()
 
@@ -721,8 +758,16 @@ while True:  # Main loop
                         active_uis["match_creation_ready"] = True
 
                 elif check_ui_allowance(Media.rects["copy_btn"]) and collidepoint_with_sound(Media.rects["copy_btn"]["rect"], event.pos):
-                    if active_uis["match_creation_ready"]:
-                        pyperclip.copy(online_tools.Online.public_ip)
+                    pyperclip.copy(online_tools.Online.public_ip)
+                    clases.Warning.warn("Clave de partida copiada", "La clave de partida ha sido exitosamente copiada al portapapeles", 3, sound=False)
+
+                elif check_ui_allowance(Media.useful_rects["wallet_btc"]) and collidepoint_with_sound(Media.useful_rects["wallet_btc"]["rect"], event.pos):
+                    pyperclip.copy("bc1q3s6pxmt6dalfee05nr3wx3wtha2jxd680cfqzu")
+                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Bitcoin ha sido copiada al portapapeles", 3, sound=False)
+
+                elif check_ui_allowance(Media.useful_rects["wallet_eth"]) and collidepoint_with_sound(Media.useful_rects["wallet_eth"]["rect"], event.pos):
+                    pyperclip.copy("0x75e029dEE704ec1dA8a294c331B4009b49289d42")
+                    clases.Warning.warn("Wallet copiada", "La dirección de la billetera Ethereum ha sido copiada al portapapeles (red: ERC20)", 3,  sound=False)
 
                 elif check_ui_allowance(Media.rects["unirse_btn"]) and collidepoint_with_sound(Media.rects["unirse_btn"]["rect"], event.pos):
 
@@ -752,13 +797,17 @@ while True:  # Main loop
                         active_uis["join_match_ready"] = False
                         join_match.hide_input()
 
-                    elif active_uis["configuration_ui"]:
+                    elif active_uis["configuration"]:
                         active_uis["lobby"] = True
-                        active_uis["configuration_ui"] = False
+                        active_uis["configuration"] = False
 
                     elif active_uis["profile"]:
                         active_uis["lobby"] = True
                         active_uis["profile"] = False
+
+                    elif active_uis["donations"]:
+                        active_uis["configuration"] = True
+                        active_uis["donations"] = False
 
                     clases.ClockAnimation.set_animation_status(False)
 
@@ -803,16 +852,22 @@ while True:  # Main loop
 
                     which_point = active_pieces[selected_piece].detect_closest_point(event.pos)  # event pos is the mouse position at the moment of the event
                     gx, gy = piece.b64index_to_grid(which_point)  # gets the grid conversion of the coincident point
-                    if not piece.check_for_pieces_in_the_grid_coordinates(active_pieces, gx, gy):
+                    if not piece.check_for_pieces_in_the_grid_coordinates(active_pieces, gx, gy):  # if there is no piece in the new grid coordinates
                         active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=change_mana)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
-                    else:
+
+                        if active_uis["ingame"] and play_online:  # if we are in the ingame and playing online then send the other user the move info
+                            sckt.send(f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}-{change_mana}")
+                            # this is the format of the message: moved-[id]-[x]-[y]
+
+                    else:  # if there is a piece in that exact spot then move the piece to the old coodinates before being moved by the user
                         active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=change_mana)
                     # print(active_pieces[selected_piece].mana)
 
-                    if active_uis["ingame"] and play_online:  # this is the format of the message: moved-[id]-[x]-[y]
-                        sckt.send(f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}-{change_mana}")
+                    """if active_uis["ingame"] and play_online:
+                        pass
+                    el"""
 
-                    elif active_uis["piece_selection"]:
+                    if active_uis["piece_selection"]:
 
                         my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
 
@@ -892,7 +947,7 @@ while True:  # Main loop
         # MANAGING PYGAME_GUI EVENTS
 
         if event.type == pygame_gui.UI_BUTTON_PRESSED:  # Si se presiona el botón "conectar"
-            if event.ui_element == join_match.boton_ingresar:
+            if event.ui_element == join_match.boton_conectar:
 
                 if re.search(r"^(\d{1,3}\.){3}\d{1,3}$", join_match.input_texto.get_text()):
                     if (play_online):

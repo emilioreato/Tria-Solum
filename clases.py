@@ -81,6 +81,25 @@ class Game:
         return file_path
 
     @staticmethod
+    def replace_line_in_txt(file, text_to_search, new_line, mode):
+
+        with open(file, 'r') as file:
+            lines = file.readlines()
+
+        if mode == "read":
+            for line in lines:
+                if text_to_search in line:
+                    return line
+
+        else:
+            with open(file, 'w') as file:
+                for line in lines:
+                    if text_to_search in line:
+                        file.write(new_line + '\n')
+                    else:
+                        file.write(line)
+
+    @staticmethod
     def smooth_movement(x, n=2):
         return (x**n) / (x**n + 1)
 
@@ -533,11 +552,20 @@ class Lobby:
 
     def draw(self):
 
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
         Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
         Game.screen.blit(Media.sized["crear_btn"], (Media.metrics["crear_btn"]["x"], Media.metrics["crear_btn"]["y"]))
         Game.screen.blit(Media.sized["unirse_btn"], (Media.metrics["unirse_btn"]["x"], Media.metrics["unirse_btn"]["y"]))
         Game.screen.blit(Media.sized["perfil_btn"], (Media.metrics["perfil_btn"]["x"], Media.metrics["perfil_btn"]["y"]))
+
+
+class Donation_Menu:
+
+    def __init__(self, manager):
+        pass
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["donations_ui"], (Media.metrics["donations_ui"]["x"], Media.metrics["donations_ui"]["y"]))
 
 
 class MatchCreation:
@@ -554,7 +582,6 @@ class MatchCreation:
 
     def draw(self):
 
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
         Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
         Game.screen.blit(Media.sized["generar_btn"], (Media.metrics["generar_btn"]["x"], Media.metrics["generar_btn"]["y"]))
 
@@ -577,18 +604,18 @@ class JoinMatch:
     show_ingresar_btn = False
 
     def __init__(self, manager):
-
-        JoinMatch.input_rect = pygame.Rect(Game.width // 2 - (Game.height/5)/2, Game.height // 2 - 50, Game.height/5, 50)
+        JoinMatch.input_rect = pygame.Rect()
         JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
 
-        JoinMatch.boton_rect = pygame.Rect(Game.width // 2 + (Game.height/5)/2, Game.height // 2 - 50, 100, 50)
-        JoinMatch.boton_ingresar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
+        JoinMatch.boton_rect = pygame.Rect()
+        JoinMatch.boton_conectar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
+
+        JoinMatch.resize()
 
         JoinMatch.hide_input()
 
     def draw(self):
 
-        Game.screen.blit(Media.sized["lobby_background"], (0, 0))
         Game.screen.blit(Media.sized["lobby_ui"], (Media.metrics["lobby_ui"]["x"], Media.metrics["lobby_ui"]["y"]))
 
         ClockAnimation.draw()
@@ -597,14 +624,21 @@ class JoinMatch:
             Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
 
     @staticmethod
+    def resize():
+        JoinMatch.input_texto.set_dimensions((Media.join_match_metrics["text_input"]["w"], Media.join_match_metrics["text_input"]["h"]))  # Cambiar tamaño
+        JoinMatch.input_texto.set_position((Media.join_match_metrics["text_input"]["x"], Media.join_match_metrics["text_input"]["y"]))   # Cambiar posición
+        JoinMatch.boton_conectar.set_dimensions((Media.join_match_metrics["btn_conectar"]["w"], Media.join_match_metrics["btn_conectar"]["h"]))  # Cambiar tamaño
+        JoinMatch.boton_conectar.set_position((Media.join_match_metrics["btn_conectar"]["x"], Media.join_match_metrics["btn_conectar"]["y"]))   # Cambiar posición
+
+    @staticmethod
     def show_input():
         JoinMatch.input_texto.show()
-        JoinMatch.boton_ingresar.show()
+        JoinMatch.boton_conectar.show()
 
     @staticmethod
     def hide_input():
         JoinMatch.input_texto.hide()
-        JoinMatch.boton_ingresar.hide()
+        JoinMatch.boton_conectar.hide()
 
 
 class Piece_Selection_Menu:
@@ -612,18 +646,15 @@ class Piece_Selection_Menu:
     already_executed = False
 
     def __init__(self):
-
-        Piece_Selection_Menu.reference_piece_info = [{"x": Game.height/0.64, "y": Game.height / 3, "specie": "mage"},
-                                                     {"x": Game.height/0.64, "y": Game.height / 2.25, "specie": "archer"},
-                                                     {"x": Game.height/0.64, "y": Game.height / 1.7, "specie": "knight"}]
+        pass
 
     @ staticmethod
     def draw(my_team):
         Game.screen.blit(Media.sized["piece_selection_ui"], (Media.metrics["piece_selection_ui"]["x"], Media.metrics["piece_selection_ui"]["y"]))
 
-        for i in range(3):  # drawing the iamges as the reference pieces
-            Game.screen.blit(Media.specific_copies[my_team+"_"+Piece_Selection_Menu.reference_piece_info[i]["specie"]+"_piece_selection_image"],
-                             (Piece_Selection_Menu.reference_piece_info[i]["x"], Piece_Selection_Menu.reference_piece_info[i]["y"]))
+        for i in range(3):  # drawing the images as the reference pieces
+            Game.screen.blit(Media.specific_copies[my_team+"_"+Media.piece_selection_reference_info[i]["specie"]+"_piece_selection_image"],
+                             (Media.piece_selection_reference_info[i]["x"], Media.piece_selection_reference_info[i]["y"]))
 
 
 class Configuration_Menu:
@@ -633,8 +664,38 @@ class Configuration_Menu:
 
         Game.screen.blit(Media.sized["configuration_ui"], (Media.metrics["configuration_ui"]["x"], Media.metrics["configuration_ui"]["y"]))
 
+        Game.screen.blit(Media.sized["apoyanos_btn"], (Media.metrics["apoyanos_btn"]["x"], Media.metrics["apoyanos_btn"]["y"]))
+
 
 class Profile_Menu:
+
+    def __init__(self, manager):
+        Profile_Menu.nickname_input = pygame.Rect()
+        Profile_Menu.nickname_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.input_rect, manager=manager)
+
+        Profile_Menu.slogan_input = pygame.Rect()
+        Profile_Menu.slogan_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.input_rect, manager=manager)
+
+        Profile_Menu.resize()
+
+        Profile_Menu.hide_input()
+
+    @staticmethod
+    def resize():
+        Profile_Menu.nickname_input.set_dimensions((Media.profile_menu_metrics["nickname_input"]["w"], Media.profile_menu_metrics["nickname_input"]["h"]))  # Cambiar tamaño
+        Profile_Menu.nickname_input.set_position((Media.profile_menu_metrics["nickname_input"]["x"], Media.profile_menu_metrics["nickname_input"]["y"]))   # Cambiar posición
+        Profile_Menu.slogan_input.set_dimensions((Media.profile_menu_metrics["slogan_input"]["w"], Media.profile_menu_metrics["slogan_input"]["h"]))  # Cambiar tamaño
+        Profile_Menu.slogan_input.set_position((Media.profile_menu_metrics["slogan_input"]["x"], Media.profile_menu_metrics["slogan_input"]["y"]))   # Cambiar posición
+
+    @staticmethod
+    def show_input():
+        Profile_Menu.nickname_input.show()
+        Profile_Menu.slogan_input.show()
+
+    @staticmethod
+    def hide_input():
+        Profile_Menu.nickname_input.hide()
+        Profile_Menu.slogan_input.hide()
 
     @staticmethod
     def draw():
@@ -661,6 +722,7 @@ class Warning:
     duration = 1
     text_line_length = 28
     played_sound = False
+    sound = True
 
     def __init__(self) -> None:
         pass
@@ -675,13 +737,14 @@ class Warning:
             # animation_duration = Warning.duration*0.25  # this sets the duration of the movemnt to 25% of the total duration of the warning
             # current_time = numpy.interp(time.time()-Warning.init_time, [0, animation_duration], [0, Warning.duration])  # i think there is another way of doing this but it makes
             """
-            if not Warning.played_sound and time.time()-Warning.init_time > Warning.duration*0.025:  # this is the duration of the movement of the warning image and text
+            if Warning.sound:
+                if not Warning.played_sound and time.time()-Warning.init_time > Warning.duration*0.025:  # this is the duration of the movement of the warning image and text
 
-                try:
-                    Sound.play_sfx(Sound.SFX[2])
-                    Warning.played_sound = True
-                except:
-                    pass
+                    try:
+                        Sound.play_sfx(Sound.SFX[2])
+                        Warning.played_sound = True
+                    except:
+                        pass
 
             animation_duration = Warning.duration*0.16  # the duration of the animation is 16% of the total duration of  the warning
             if animation_duration > 2:  # and it has a max value of two seconds
@@ -696,13 +759,15 @@ class Warning:
             Game.screen.blit(Warning.message, (Media.metrics["warning_ui"]["x"]+Game.height/40 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/13.2))
             if time.time() - Warning.init_time > Warning.duration:
                 Warning.show_warning = False
+                Warning.sound = True
 
     @ staticmethod
-    def warn(title, message, duration):
+    def warn(title, message, duration, sound=True):
 
         Warning.title = Fonts.warning_title_font.render(title, True, Game.LIGHT_GREY)
-        Warning.message = Fonts.warning_messsage_font.render(Fonts.insertar_salto_linea_sin_cortar_palabras(message, 40), True, Game.LIGHT_GREY)
+        Warning.message = Fonts.warning_messsage_font.render(Fonts.insertar_salto_linea_sin_cortar_palabras(message, 38), True, Game.LIGHT_GREY)
         Warning.duration = duration
+        Warning.sound = sound
         Warning.show_warning = True
         Warning.played_sound = False
         Warning.init_time = time.time()

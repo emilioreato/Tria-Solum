@@ -47,13 +47,14 @@ class Media:
             "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
             "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
-            "support_ui": pygame.image.load("resources\\images\\menu\\support_ui.png").convert(),
+            "donations_ui": pygame.image.load("resources\\images\\menu\\donations_ui.png").convert(),
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
             "perfil_ui": pygame.image.load("resources\\images\\menu\\perfil_ui.png").convert(),
             "warning_ui": pygame.image.load("resources\\images\\menu\\warning.png").convert_alpha(),
 
             "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
 
+            "apoyanos_btn": pygame.image.load("resources\\images\\menu\\apoyanos.png").convert(),
             "perfil_btn": pygame.image.load("resources\\images\\menu\\perfil.png").convert(),
             "seleccionar_foto_btn": pygame.image.load("resources\\images\\menu\\seleccionar_foto.png").convert(),
             "guardar_apodo_btn": pygame.image.load("resources\\images\\menu\\guardar_apodo.png").convert(),
@@ -75,9 +76,24 @@ class Media:
             "warning_title_font": height//30,
             "warning_messsage_font": height//44,
         }
-        Fonts.resize_fonts()
 
         Media.pieces_size = height/14
+
+        Media.piece_selection_reference_info = [{"x": height/0.64, "y": height / 3, "specie": "mage"},
+                                                {"x": height/0.64, "y": height / 2.25, "specie": "archer"},
+                                                {"x": height/0.64, "y": height / 1.7, "specie": "knight"}]
+
+        Media.join_match_metrics = {"text_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
+                                    "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
+                                    }
+
+        Media.profile_menu_metrics = {"nickname_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
+                                      "slogan_input": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
+                                      }
+
+        Media.useful_rects_metrics = {"wallet_btc": {"x": height/1.536, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
+                                      "wallet_eth": {"x": height/0.973, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
+                                      }
 
         Media.slider_metrics = (height/1.35, height / 2.25)
 
@@ -103,8 +119,8 @@ class Media:
             "shrink_btn": {"x": height//0.6, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": ("ingame", "match_creation", "join_match", "match_creation_ready", "join_match_ready")},
-            "music_btn": {"x": height/1.972, "y": height / 2.351, "w": height / 28, "h": height / 28, "use_rect_in": "configuration_ui"},
-            "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": ("match_creation_ready", "donations")},
+            "music_btn": {"x": height/1.972, "y": height / 2.351, "w": height / 28, "h": height / 28, "use_rect_in": "configuration"},
+            "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": "match_creation_ready"},
             "chat_btn": {"x": height/2, "y": height / 30, "w": height / 24, "h": height / 24, "use_rect_in": "ingame"},
 
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
@@ -119,7 +135,7 @@ class Media:
             "chat_ui": {"x": height/0.8, "y":  height / 6.83, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
             "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
-            "support_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
+            "donations_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "perfil_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "warning_ui": {"x": width/48, "y":  height/1.345, "w": (height*(1280/615))/4.5, "h": height/4.5, "use_rect_in": "all"},
@@ -127,11 +143,12 @@ class Media:
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
+            "apoyanos_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "configuration"},
             "perfil_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "lobby"},
             "seleccionar_foto_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.4, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
-            "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.2, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
-            "guardar_lema_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
-            "volver_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation", "join_match", "profile", "match_creation_ready", "join_match_ready", "configuration_ui")},
+            "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.08, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "guardar_lema_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/1.8, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "volver_btn": {"x": width/2-((height*(1280/240))/28)/2, "y":  height/1.465, "w": (height*(1280/240))/28, "h": height/28, "use_rect_in": ("match_creation", "join_match", "profile", "match_creation_ready", "donations", "join_match_ready", "configuration")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
             "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.1, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
@@ -162,6 +179,18 @@ class Media:
         Media.backgrounds = []
         for bkg in Media.bare_backgrounds:
             Media.backgrounds.append(pygame.transform.smoothscale(bkg, (round(height*(16/9)), height)))
+
+        Media.useful_rects = {}
+        for key, value in Media.useful_rects_metrics.items():
+            Media.useful_rects.update({key: {"rect": pygame.Rect(value["x"], value["y"], value["w"], value["h"]), "use_rect_in": value["use_rect_in"]}})
+
+        Media.fused_rect_list = []  # fuses all the rectangles in a single list
+        for rect in Media.rects.items():
+            Media.fused_rect_list.append(rect)
+        for rect in Media.useful_rects.items():
+            Media.fused_rect_list.append(rect)
+
+        Fonts.resize_fonts()
 
     @staticmethod
     def convert(image, mode="default"):  # a function used to convert the images to the pygame format. you can choose between normal or alpha mode
