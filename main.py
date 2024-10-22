@@ -95,6 +95,7 @@ current_volume = 0
 
 intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
               "audio": "resources\\intro\\intro_audio.mp3"}
+
 """
 deck = clases.Deck()
 deck.shuffle_deck()  # Barajar el mazo
@@ -129,7 +130,7 @@ def setup():
     piece_selection_menu = clases.Piece_Selection_Menu()
     configuration_menu = clases.Configuration_Menu()
     profile_menu = clases.Profile_Menu(manager)
-    chat_menu = clases.Chat()
+    chat_menu = clases.Chat(manager)
     warning_manager = clases.Warning()
     donations_menu = clases.Donation_Menu(manager)
 
@@ -179,6 +180,9 @@ def set_up_online(mode):  # this function sets up the server and client objects 
         clases.JoinMatch.show_ingresar_btn = True
         active_uis["join_match"] = False
         active_uis["join_match_ready"] = True
+
+        sound_player.play_sfx(sound_player.SFX[3])
+
         conection_state = True
 
     elif mode == "server":
@@ -190,6 +194,8 @@ def set_up_online(mode):  # this function sets up the server and client objects 
 
         active_uis["match_creation"] = False
         active_uis["match_creation_ready"] = True
+
+        sound_player.play_sfx(sound_player.SFX[3])
 
         sckt.server_wait_for_connection()
         conection_state = True
@@ -688,28 +694,34 @@ while True:  # Main loop
 
                 elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()
-                    if selected_file_path.endswith('.png'):
-                        game.replace_line_in_txt("user_info\\data.txt", "pfp", f"pfp: {selected_file_path}", mode="write")
+
+                    if selected_file_path.endswith('.png'):  # check if the file is a png
+                        game.replace_line_in_txt("user_info\\data.txt", "pfp", f"pfp: {selected_file_path}", mode="write")  # update the value of the profile picture in the data.txt file
+                        sound_player.play_sfx(sound_player.SFX[3])
                     else:
                         clases.Warning.warn("Imágen inválida", "La imágen debe ser formato PNG y es recomendable que no supere una resolución de 512x512 [1:1].", 8)
 
                 elif check_ui_allowance(Media.rects["guardar_apodo_btn"]) and collidepoint_with_sound(Media.rects["guardar_apodo_btn"]["rect"], event.pos):  # check if btn was clicked
-                    entry = profile_menu.nickname_input.get_text().strip()
-                    profile_menu.nickname_input.set_text("")
-                    if re.search(r"^[A-Za-z0-9._\-]{5,12}$", entry):
-                        game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")
+                    entry = profile_menu.nickname_input.get_text().strip()  # get the text from the input
+                    profile_menu.nickname_input.set_text("")  # deleate the text entered in the input
+
+                    if re.search(r"^[A-Za-z0-9._\-]{5,12}$", entry):  # the nickname must follow some rules
+                        game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")  # update the value of the nickname
+                        sound_player.play_sfx(sound_player.SFX[3])
                     else:
-                        clases.Warning.warn("Apodo inválido", "El apodo debe tener entre 5 y 12 caracteres y solo puede poseer los siguientes símbolos: (._-).", 8)
+                        clases.Warning.warn("Apodo inválido", "El apodo debe tener entre 5 y 12 caracteres y solo puede poseer los siguientes símbolos: (._-).", 8)  # if the nickname is invalid, show a warning
 
                 elif check_ui_allowance(Media.rects["guardar_lema_btn"]) and collidepoint_with_sound(Media.rects["guardar_lema_btn"]["rect"], event.pos):  # check if btn was clicked
-                    entry = profile_menu.slogan_input.get_text().strip()
-                    profile_menu.slogan_input.set_text("")
-                    if re.search(r"^[A-Za-z0-9._\-,;:]{3,30}$", entry):
-                        game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")
+                    entry = profile_menu.slogan_input.get_text().strip()  # get the text from the input
+                    profile_menu.slogan_input.set_text("")  # deleate the text entered in the input
+
+                    if re.search(r"^[A-Za-z0-9._\-,;:]{3,30}$", entry):  # the slogan must follow some rules
+                        game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")  # update the value of the slogan
+                        sound_player.play_sfx(sound_player.SFX[3])
                     else:
                         clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer simbolos extraños.", 8)
 
-                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # check if btn was clickeod
+                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # if the shrink btn was clicked resize eveything to the due size
 
                     shrink_state = not shrink_state  # pulsator to conmutator logic
 
@@ -725,6 +737,7 @@ while True:  # Main loop
                         set_mouse_usage(True, False)
 
                         join_match.resize()
+                        profile_menu.resize()
 
                     else:
 
@@ -738,6 +751,7 @@ while True:  # Main loop
                         set_mouse_usage(False, True)
 
                         join_match.resize()
+                        profile_menu.resize()
 
                 # GOING THROUGH THE MENUS
                 elif check_ui_allowance(Media.rects["configuration_btn"]) and collidepoint_with_sound(Media.rects["configuration_btn"]["rect"], event.pos):
@@ -774,6 +788,7 @@ while True:  # Main loop
                     else:
                         active_uis["match_creation"] = False
                         active_uis["match_creation_ready"] = True
+                        sound_player.play_sfx(sound_player.SFX[3])
 
                 elif check_ui_allowance(Media.rects["copy_btn"]) and collidepoint_with_sound(Media.rects["copy_btn"]["rect"], event.pos):
                     pyperclip.copy(online_tools.Online.public_ip)

@@ -714,8 +714,9 @@ class Profile_Menu:
 
 class Chat:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, manager) -> None:
+        Chat.input = pygame.Rect()
+        Chat.input = pygame_gui.elements.UITextEntryLine(relative_rect=Chat.input, manager=manager)
 
     @staticmethod
     def draw():
