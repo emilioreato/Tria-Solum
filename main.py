@@ -619,6 +619,9 @@ while True:  # Main loop
                     rect = values[1]["rect"]
                     use_in = values[1]["use_rect_in"]
 
+                    if f"{values[0]}" in Media.do_not_use_for_hover:  # this checks if the btn is not supposed to change the cursor image when hovered
+                        continue
+
                     if type(use_in) == tuple:    # if the btn is used in multiple uis, it checks if the current ui is active then checks if the btn is being hovered and if it is, it changes the cursor image to a hand
                         for possible_use in use_in:
 
@@ -704,22 +707,30 @@ while True:  # Main loop
                         clases.Warning.warn("Imágen inválida", "La imágen debe ser formato PNG y es recomendable que no supere una resolución de 512x512 [1:1].", 8)
 
                 elif check_ui_allowance(Media.rects["guardar_apodo_btn"]) and collidepoint_with_sound(Media.rects["guardar_apodo_btn"]["rect"], event.pos):  # check if btn was clicked
+
                     entry = profile_menu.nickname_input.get_text().strip()  # get the text from the input
-                    profile_menu.nickname_input.set_text("")  # deleate the text entered in the input
 
                     if re.search(r"^[A-Za-z0-9._\-]{5,12}$", entry):  # the nickname must follow some rules
+
                         game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")  # update the value of the nickname
                         sound_player.play_sfx(sound_player.SFX[3])
+                        clases.Profile_Menu.nickname_input.set_text("Ingrese un apodo")  # Borrar el texto cuando se haga focus
+                        # clases.Profile_Menu.nickname_input_focused = False
+
                     else:
                         clases.Warning.warn("Apodo inválido", "El apodo debe tener entre 5 y 12 caracteres y solo puede poseer los siguientes símbolos: (._-).", 8)  # if the nickname is invalid, show a warning
 
                 elif check_ui_allowance(Media.rects["guardar_lema_btn"]) and collidepoint_with_sound(Media.rects["guardar_lema_btn"]["rect"], event.pos):  # check if btn was clicked
+
                     entry = profile_menu.slogan_input.get_text().strip()  # get the text from the input
-                    profile_menu.slogan_input.set_text("")  # deleate the text entered in the input
 
                     if re.search(r"^[A-Za-z0-9._\-,;:]{3,30}$", entry):  # the slogan must follow some rules
+
                         game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")  # update the value of the slogan
                         sound_player.play_sfx(sound_player.SFX[3])
+                        clases.Profile_Menu.slogan_input.set_text("Ingrese un lema")  # Borrar el texto cuando se haga focus
+                        # clases.Profile_Menu.slogan_input_focused = False
+
                     else:
                         clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer simbolos extraños.", 8)
 
@@ -850,10 +861,10 @@ while True:  # Main loop
 
                 if active_uis["piece_selection"]:
                     for i in range(3):  # Checks if any piece was clicked
-                        if clases.Piece.is_clicked(event.pos, (piece_selection_menu.reference_piece_info[i]["x"]+(Media.pieces_size*1.5)/2, piece_selection_menu.reference_piece_info[i]["y"]+(Media.pieces_size*1.5)/2), mult=1.5):
+                        if clases.Piece.is_clicked(event.pos, (Media.piece_selection_reference_info[i]["x"]+(Media.pieces_size*1.5)/2, Media.piece_selection_reference_info[i]["y"]+(Media.pieces_size*1.5)/2), mult=1.5):
 
                             follow_mouse = True
-                            match piece_selection_menu.reference_piece_info[i]["specie"]:
+                            match Media.piece_selection_reference_info[i]["specie"]:
                                 case "mage":
                                     piece = clases.Mage(0, 0, my_team, 20, 20, 20, 20, 2)
                                 case "archer":
@@ -1026,3 +1037,31 @@ while True:  # Main loop
         start_time = time.time()
 
     game.timer.tick(fps)  # set the fps to the maximun possible
+
+
+"""
+
+        if event.type == MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if clases.Profile_Menu.nickname_input.get_relative_rect().collidepoint(event.pos):
+
+                    if not clases.Profile_Menu.nickname_input_focused:  # and clases.Profile_Menu.nickname_input.get_text() == "Ingrese un apodo":
+                        clases.Profile_Menu.nickname_input.set_text("d ")  # Borrar el texto cuando se haga focus
+                        clases.Profile_Menu.nickname_input_focused = True  # Marcar que ya se hizo focoelif event.type == pygame_gui.UI_TEXT_ENTRY_FOCUSED:
+
+                else:
+
+                    clases.Profile_Menu.nickname_input.set_text("Ingrese un apodo")  # Borrar el texto cuando se haga focus
+                    clases.Profile_Menu.nickname_input_focused = False
+                
+                if clases.Profile_Menu.slogan_input.get_relative_rect().collidepoint(event.pos):
+
+                    if not clases.Profile_Menu.slogan_input_focused:  # and clases.Profile_Menu.slogan_input.get_text() == "Ingrese un lema":
+                        clases.Profile_Menu.slogan_input.set_text("")  # Borrar el texto cuando se haga focus
+                        clases.Profile_Menu.slogan_input_focused = True  # Marcar que ya se hizo focoelif event.type == pygame_gui.UI_TEXT_ENTRY_FOCUSED:
+                
+                else:
+                    clases.Profile_Menu.slogan_input.set_text("Ingrese un lema")  # Borrar el texto cuando se haga focus
+                    clases.Profile_Menu.slogan_input_focused = False
+
+"""

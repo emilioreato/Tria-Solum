@@ -665,6 +665,9 @@ class Piece_Selection_Menu:
 
 class Configuration_Menu:
 
+    nickname_input_focused = False
+    slogan_input_focused = False
+
     @staticmethod
     def draw():
 
@@ -701,7 +704,12 @@ class Profile_Menu:
     @staticmethod
     def hide_input():
         Profile_Menu.nickname_input.hide()
+        Profile_Menu.nickname_input.set_text("Ingrese un apodo")
+        # Profile_Menu.nickname_input_focused = False
+
         Profile_Menu.slogan_input.hide()
+        Profile_Menu.slogan_input.set_text("Ingrese un lema")
+        # Profile_Menu.slogan_input_focused = False
 
     @staticmethod
     def draw():
@@ -724,6 +732,8 @@ class Chat:
 
         Chat.resize()
 
+        Chat.hide_input()
+
     @staticmethod
     def draw():
 
@@ -740,25 +750,30 @@ class Chat:
 
             total_lines += msg["msg_info"]["lines"]
 
-            init_distance = total_lines*chars_height
+            distance_from_init = total_lines*chars_height
 
-            if init_distance > max_chat_height:
-                excedent_lines = round((init_distance-max_chat_height)/chars_height)
+            if distance_from_init > max_chat_height:
+
+                excedent_lines = round((distance_from_init-max_chat_height)/chars_height)
 
                 splited_msg = msg["msj"].split("\n")
 
-                render_to_show = Fonts.chat_msg_font.render(splited_msg[excedent_lines:], True, Game.LIGHT_GREY)
+                cut_msg = "\n".join(splited_msg[excedent_lines:])
 
-                Game.screen.blit(render_to_show, (Media.metrics["chat_ui"]["x"]+Game.height/80, chat_init_height-init_distance))
+                render_to_show = Fonts.chat_msg_font.render(cut_msg, True, Game.LIGHT_GREY)
+
+                Game.screen.blit(render_to_show, (Media.metrics["chat_ui"]["x"]+Game.height/80, chat_init_height-distance_from_init))
 
                 break
 
             else:
                 render_to_show = msg["render"]
 
-            Game.screen.blit(render_to_show, (Media.metrics["chat_ui"]["x"]+Game.height/80, chat_init_height-init_distance))
+            Game.screen.blit(render_to_show, (Media.metrics["chat_ui"]["x"]+Game.height/80, chat_init_height-distance_from_init))
 
     def add(person, msg_content, date):  # time.strftime("%H:%M")
+
+        msg_content.replace("\n", "")  # deleting all possible \n made by the user
 
         msg_content = "[" + date + "] " + person.capitalize() + ":" + msg_content   # it adds the date and the person's name to the message because its going to be shown all together
 
@@ -768,13 +783,21 @@ class Chat:
 
         render = Fonts.chat_msg_font.render(msg["msj"], True, Game.LIGHT_GREY)  # this generates a visual render of the message
 
-        Chat.msj_history.insert({"msg_info": msg, "render": render}, 0)  # we store both the render and the info about the message in an dict and add that to the general list of messages
+        Chat.msj_history.insert(0, {"msg_info": msg, "render": render})  # we store both the render and the info about the message in an dict and add that to the general list of messages
         # we insert the message at the start of the list so then we can go thought the list more easily
 
     @staticmethod
     def resize():
-        Chat.input.set_dimensions((Media.profile_menu_metrics["nickname_input"]["w"], Media.profile_menu_metrics["nickname_input"]["h"]))  # Cambiar tamaño
-        Chat.input.set_position((Media.profile_menu_metrics["nickname_input"]["x"], Media.profile_menu_metrics["nickname_input"]["y"]))   # Cambiar posición
+        Chat.input.set_dimensions((Media.chat_input_metrics["input"]["w"], Media.chat_input_metrics["input"]["h"]))  # Cambiar tamaño
+        Chat.input.set_position((Media.chat_input_metrics["input"]["x"], Media.chat_input_metrics["input"]["y"]))   # Cambiar posición
+
+    @staticmethod
+    def show_input():
+        Chat.input.show()
+
+    @staticmethod
+    def hide_input():
+        Chat.input.hide()
 
 
 class Warning:
