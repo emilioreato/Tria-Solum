@@ -73,6 +73,7 @@ class Media:
         width = height*(16/9)
 
         Media.fonts_metrics = {
+            "chat_msg_font": height//50,
             "warning_title_font": height//30,
             "warning_messsage_font": height//44,
         }
@@ -87,8 +88,8 @@ class Media:
                                     "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
                                     }
 
-        Media.profile_menu_metrics = {"nickname_input": {"x": height/1.81, "y": height / 2, "w": height/5, "h": 50},
-                                      "slogan_input": {"x": height/1.81, "y": height / 1.78, "w": height/50+80, "h": 50},
+        Media.profile_menu_metrics = {"nickname_input": {"x": height/1.81, "y": height / 2.056, "w": height/5, "h": 42},
+                                      "slogan_input": {"x": height/1.81, "y": height / 1.806, "w": height/8, "h": 42},
                                       }
 
         Media.useful_rects_metrics = {"wallet_btc": {"x": height/1.536, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
@@ -143,10 +144,10 @@ class Media:
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
-            "apoyanos_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "configuration"},
+            "apoyanos_btn": {"x": height/0.932, "y":  height/1.462, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "configuration"},
             "perfil_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "lobby"},
             "seleccionar_foto_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.4, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
-            "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.08, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
+            "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.04, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
             "guardar_lema_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/1.8, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
             "volver_btn": {"x": width/2-((height*(1280/240))/28)/2, "y":  height/1.465, "w": (height*(1280/240))/28, "h": height/28, "use_rect_in": ("match_creation", "join_match", "profile", "match_creation_ready", "donations", "join_match_ready", "configuration")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
@@ -207,17 +208,18 @@ class Fonts:
 
     def resize_fonts():
 
+        Fonts.chat_msg_font = pygame.font.Font(None, Media.fonts_metrics["chat_msg_font"])
         Fonts.warning_title_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
         Fonts.warning_messsage_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
 
-    def insertar_salto_linea_sin_cortar_palabras(texto, longitud_maxima):
-        palabras = texto.split()  # Dividir el texto en palabras
+    def transform_text_line_to_paragraph(text, max_length):
+        words = text.split()  # Dividir el texto en palabras
         resultado = []
         linea_actual = ""
 
-        for palabra in palabras:
+        for palabra in words:
             # Si agregar la palabra a la línea actual no excede la longitud máxima
-            if len(linea_actual) + len(palabra) + 1 <= longitud_maxima:
+            if len(linea_actual) + len(palabra) + 1 <= max_length:
                 if linea_actual:  # Si ya hay palabras en la línea, agregar un espacio antes
                     linea_actual += " " + palabra
                 else:
@@ -231,4 +233,4 @@ class Fonts:
         if linea_actual:
             resultado.append(linea_actual)
 
-        return "\n".join(resultado)
+        return ("\n".join(resultado), len(resultado))  # returns the formatted msg and the number of lines it has

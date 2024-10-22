@@ -502,7 +502,8 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
         draw_ingame()
         piece_selection_menu.draw(my_team)
 
-    if active_uis["chat"]:
+    if active_uis["chat"] and ite3 > 1:
+        ite3 = 0
         chat_menu.draw()
 
     if active_uis["configuration"]:
@@ -582,6 +583,7 @@ for song in sound_player.UI_SONGS:  # plays and specefically selects the song th
 ite0 = 0
 ite1 = 0
 ite2 = 0
+ite3 = 0
 
 init_time = time.time()  # saves the time when the loop was entered
 while True:  # Main loop
@@ -958,6 +960,9 @@ while True:  # Main loop
             elif (pygame.key.name(event.key) == "d"):
                 active_pieces[selected_piece].move(0, -1, True)
 
+            elif (pygame.key.name(event.key) == "c"):
+                clases.Chat.add("yo", time.strftime("%H:%M"), f"hola{ite0}")
+
             elif (pygame.key.name(event.key) == "m"):
                 try:
                     sound_player.stopmusic()
@@ -1011,6 +1016,7 @@ while True:  # Main loop
     ite0 += 1  # iterator used to control some events
     ite1 += 1
     ite2 += 1
+    ite3 += 1
 
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop
