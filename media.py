@@ -224,7 +224,7 @@ class Fonts:
         Fonts.warning_title_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
         Fonts.warning_messsage_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
 
-    def transform_text_line_to_paragraph(text, max_length):
+    def transform_text_line_to_paragraph(text, max_length, join=True):
         words = text.split()  # Dividir el texto en palabras
         resultado = []
         linea_actual = ""
@@ -236,8 +236,22 @@ class Fonts:
                     linea_actual += " " + palabra
                 else:
                     linea_actual = palabra
-            else:
-                # Si la palabra excede el límite, agregar la línea actual al resultado y empezar una nueva
+            elif len(palabra) > max_length:
+                """chars_available = max_length - len(linea_actual) - 2
+                if chars_available > 1:
+                    linea_actual += " " + palabra[:chars_available+1] + "-"
+                    resultado.append(linea_actual)
+                    palabra = palabra[chars_available:]
+                else:
+                    resultado.append(linea_actual)"""
+                if len(linea_actual) > 0:
+                    resultado.append(linea_actual)
+                palabra_dividida = [palabra[i:i+max_length-1]+"-" for i in range(0, len(palabra), max_length-1)]
+                palabra_dividida[-1] = palabra_dividida[-1][:-1]  # Eliminar el último guión de la última linea
+                resultado.extend(palabra_dividida[:-1])
+                linea_actual = palabra_dividida[-1]  # Agregar la última parte a la nueva línea actual
+
+            else:  # Si la palabra excede el límite, agregar la línea actual al resultado y empezar una nueva
                 resultado.append(linea_actual)
                 linea_actual = palabra
 
@@ -245,4 +259,7 @@ class Fonts:
         if linea_actual:
             resultado.append(linea_actual)
 
-        return ("\n".join(resultado), len(resultado))  # returns the formatted msg and the number of lines it has
+        if join:
+            return ("\n".join(resultado), len(resultado))  # returns the formatted msg and the number of lines it has
+        else:
+            return (resultado, len(resultado))

@@ -442,6 +442,21 @@ def check_ui_allowance(element_in_media_rect_list):
     return False
 
 
+def collect_msg_and_send_it():
+    msg_text = chat_menu.input.get_text().strip()  # get the text from the input
+
+    if re.match(r"^[\w\sáéíóúÁÉÍÓÚñÑ.,;:!?()*+\"\'/\n-]*$", msg_text) and 0 < len(msg_text) < 100:  # the message must follow some rules
+
+        clases.Chat.add("Tú", msg_text, time.strftime("%H:%M"))  # add the message to the chat
+
+        clases.Chat.input.set_text("")  # clear the input
+
+        msg_text = msg_text.replace("-", "=G?")  # replace the - symbol with =G? to avoid problems with the protocol. just encrypting it
+        sckt.send(f"chat-{msg_text}")  # send the message to the enemy
+    elif 0 < len(msg_text):
+        clases.Warning.warn("Mensaje inválido", "El mensaje debe tener hasta 100 caracteres y no poseer simbolos extraños.", 5)
+
+
 def set_mouse_usage(visible=False, grab=True):
     if visible:
         clases.Cursor.show_cursor = False
@@ -594,8 +609,8 @@ ite2 = 0
 init_time = time.time()  # saves the time when the loop was entered
 while True:  # Main loop
 
-    if (ite0 == 400 and active_uis["ingame"]):
-        print("wow", len(active_pieces))
+    # if (ite0 == 400 and active_uis["ingame"]):
+    # print("wow", len(active_pieces))
 
     if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
         if not music_pause_state:  # you also have to check if the music is not paused
@@ -746,14 +761,7 @@ while True:  # Main loop
 
                 elif check_ui_allowance(Media.useful_rects["send_btn_chat"]) and collidepoint_with_sound(Media.useful_rects["send_btn_chat"]["rect"], event.pos):  # if the send btn was clicked
 
-                    msg_text = chat_menu.input.get_text().strip()  # get the text from the input
-
-                    if re.match(r"^[\w\sáéíóúÁÉÍÓÚñÑ.,;:!?()\"\'/\n-]*$", msg_text) and 0 < len(msg_text) < 100:  # the message must follow some rules
-
-                        clases.Chat.add("Tú", msg_text, time.strftime("%H:%M"))
-
-                        msg_text = msg_text.replace("-", "=G?")
-                        sckt.send(f"chat-{msg_text}")
+                    collect_msg_and_send_it()
 
                 elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # if the shrink btn was clicked resize eveything to the due size
 
@@ -908,6 +916,12 @@ while True:  # Main loop
 
                             break
 
+                if clases.Chat.input.get_relative_rect().collidepoint(event.pos):
+                    print("clicked innn")
+                    clases.Chat.focused = True
+                else:
+                    clases.Chat.focused = False
+
             elif event.button == 3:
                 if Media.rects["music_btn"]["rect"].collidepoint(event.pos):  # check if btn was clicked
                     music_pause_state = not music_pause_state
@@ -972,6 +986,8 @@ while True:  # Main loop
 
         if event.type == pygame.KEYDOWN:  # if a key was pressed
 
+            print(pygame.key.name(event.key))
+
             if (pygame.key.name(event.key) == "o" and selected_background < game.BACKGROUNDS_AMOUNT-1):  # used to change into diff background images
                 selected_background += 1
 
@@ -999,8 +1015,9 @@ while True:  # Main loop
             elif (pygame.key.name(event.key) == "a"):
                 active_pieces[selected_piece].move(0, 1, True)
 
-            elif (pygame.key.name(event.key) == "d"):
-                active_pieces[selected_piece].move(0, -1, True)
+            elif (pygame.key.name(event.key) == "return") and clases.Chat.focused:
+                collect_msg_and_send_it()
+                clases.Chat.input.focus()
 
             elif (pygame.key.name(event.key) == "m"):
                 try:

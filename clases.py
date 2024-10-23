@@ -721,6 +721,8 @@ class Profile_Menu:
 
 class Chat:
 
+    focused = False
+
     msj_history = [
         # {"text": {"person": , "date": , "msg": , "msg_lines": }, "render": } this is the format of the elements it contains
     ]
@@ -736,6 +738,18 @@ class Chat:
     @staticmethod
     def draw():
 
+        def borrar_antes_de_n_coincidencias(texto, coincidencia, cantidad_coincidencias_en_cual_cortar):
+            # Encontrar todas las posiciones de las coincidencias en el string
+            posiciones = [i for i in range(len(texto)) if texto.startswith(coincidencia, i)]
+
+            # Verificar si hay al menos tres coincidencias
+            if len(posiciones) >= cantidad_coincidencias_en_cual_cortar:
+                # Cortar el string desde el final de la tercera coincidencia
+                return texto[posiciones[cantidad_coincidencias_en_cual_cortar-1] + len(coincidencia):]
+            else:
+                # Si no hay tres coincidencias, devolver el string original
+                return texto
+
         Game.screen.blit(Media.sized["chat_ui"], (Media.metrics["chat_ui"]["x"], Media.metrics["chat_ui"]["y"]))
 
         # rect4 = pygame.rect.Rect(Media.useful_rects_metrics["send_btn_chat"]["x"], Media.useful_rects_metrics["send_btn_chat"]["y"], Media.useful_rects_metrics["send_btn_chat"]["w"], Media.useful_rects_metrics["send_btn_chat"]["h"])
@@ -750,21 +764,33 @@ class Chat:
 
         chars_height = Media.fonts_metrics["chat_msg_font"]
 
+        max_lines_amount = int(max_chat_height//chars_height)
+
         total_lines = 0
 
-        for msg in Chat.msj_history:
+        for msg_being_rendered in Chat.msj_history:
 
-            total_lines += msg["msg_info"]["lines"]
+            total_lines += msg_being_rendered["msg_info"]["lines"]
 
             distance_from_init = total_lines*chars_height
 
-            if distance_from_init > max_chat_height:
+            if total_lines > max_lines_amount:
 
-                excedent_lines = round((distance_from_init-max_chat_height)/chars_height)
+                excedent_lines = total_lines-max_lines_amount
 
-                splited_msg = msg["msj"].split("\n")
+                distance_from_init = max_lines_amount*chars_height
 
-                cut_msg = "\n".join(splited_msg[excedent_lines:])
+                # splited_msg = msg_being_rendered["msg_info"]["msj"].split("\n")
+
+                msg_content_formatted = "[" + msg_being_rendered["msg_info"]["date"] + "] " + msg_being_rendered["msg_info"]["person"].capitalize() + " : " + msg_being_rendered["msg_info"]["msj"]
+
+                splited_msg = Fonts.transform_text_line_to_paragraph(msg_content_formatted, 33, join=False)
+
+                # cut_msg = borrar_antes_de_n_coincidencias(splited_msg[0], "\n", excedent_lines-1)
+
+                # print(cut_msg)
+
+                cut_msg = "\n".join(splited_msg[0][excedent_lines:])
 
                 render_to_show = Fonts.chat_msg_font.render(cut_msg, True, Game.LIGHT_GREY)
 
@@ -773,7 +799,7 @@ class Chat:
                 break
 
             else:
-                render_to_show = msg["render"]
+                render_to_show = msg_being_rendered["render"]
 
             Game.screen.blit(render_to_show, (Media.metrics["chat_ui"]["x"]+Game.height/80, chat_init_height-distance_from_init))
 
@@ -781,13 +807,15 @@ class Chat:
 
         msg_content.replace("\n", "")  # deleting all possible \n made by the user
 
-        msg_content = "[" + date + "] " + person.capitalize() + ":" + msg_content   # it adds the date and the person's name to the message because its going to be shown all together
+        msg_content_formatted = "[" + date + "] " + person.capitalize() + " : " + msg_content   # it adds the date and the person's name to the message because its going to be shown all together
 
-        formatted_msg = Fonts.transform_text_line_to_paragraph(msg_content, 40)  # this slipts the text into multuple lines if it's too long
+        formatted_msg = Fonts.transform_text_line_to_paragraph(msg_content_formatted, 33)  # this slipts the text into multuple lines if it's too long
 
-        msg = {"person": person, "date": date, "msj": formatted_msg[0], "lines": formatted_msg[1]}  # this saves important info about the message coupled with the message itself
+        print(formatted_msg[0])
 
-        render = Fonts.chat_msg_font.render(msg["msj"], True, Game.LIGHT_GREY)  # this generates a visual render of the message
+        msg = {"person": person, "date": date, "msj": msg_content, "lines": formatted_msg[1]}  # this saves important info about the message coupled with the message itself
+
+        render = Fonts.chat_msg_font.render(formatted_msg[0], True, Game.LIGHT_GREY)  # this generates a visual render of the message
 
         Chat.msj_history.insert(0, {"msg_info": msg, "render": render})  # we store both the render and the info about the message in an dict and add that to the general list of messages
         # we insert the message at the start of the list so then we can go thought the list more easily
@@ -804,6 +832,12 @@ class Chat:
         Chat.input.set_position((Media.chat_input_metrics["x"], Media.chat_input_metrics["y"]))   # Cambiar posición
         Chat.input.set_dimensions((Media.chat_input_metrics["w"], Media.chat_input_metrics["h"]))  # Cambiar tamaño
 
+        # this following lines of code resize the already exisiting messages so they fit the new size of the chat. they get rendered again
+        copy_msj_history = Chat.msj_history.copy()  # we make a copy of the list of messages
+        Chat.msj_history = []  # we delete the original list of messages
+        for msg in reversed(copy_msj_history):  # this is reversed because we need to go from the last message to the first one as they are added on position 0 of the list
+            Chat.add(msg["msg_info"]["person"], msg["msg_info"]["msj"], msg["msg_info"]["date"])
+
     @ staticmethod
     def show_input():
         Chat.input.show()
@@ -811,6 +845,7 @@ class Chat:
     @ staticmethod
     def hide_input():
         Chat.input.hide()
+        Chat.focused = False
 
 
 class Warning:
