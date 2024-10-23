@@ -32,7 +32,7 @@ import pyautogui  # from pyautogui import press  # do not delete this eventhough
 import clases  # noqa
 import dev_mouse  # noqa
 from online_utilities import firewall, online_tools, portforwarding
-from media import Media
+from media import Media, Fonts
 
 
 # SETING THINGS UP
@@ -40,7 +40,7 @@ from media import Media
 
 pygame.init()  # initialize pygame
 game = clases.Game()
-game.set_up_window(1.4)
+game.set_up_window(1.35)
 
 
 # GENERAL VARIABLES
@@ -61,6 +61,12 @@ active_uis = {
     "chat": False,
     "donations": False,
     "profile": False,
+}
+
+enemy_info = {
+    "nickname": "Enemy",
+    "slogan": "Lets Win",
+    "profile_picture": "default",
 }
 
 my_pieces = []
@@ -260,15 +266,16 @@ def receive_messages():  # This function receives messages from the server while
                         active_pieces.append(clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
                         print(active_pieces)
 
-                case "dead":
+                case "dead":  # if our enemy kills a piece, it sends us this message so we can remove it from the active_pieces list
                     for piece in active_pieces:
                         if piece.id == args[1]:
                             active_pieces.remove(piece)
                     global selected_piece
                     selected_piece = None
 
-                case "chat":
-                    print("enemy: ", args[1])
+                case "chat":  # if the enemy as sent us a msg lets print it on the chat
+                    args[1] = args[1].replace("=G?", "-")  # this lines replaces the =G? with - so it doesnt break the chat. before sending the msg the enemy replace the possible - with =G?. its just encriptation
+                    clases.Chat.add(enemy_info["nickname"], args[1], time.strftime("%H:%M"))
 
                 case "exit":
                     print("the enemy has abandoned the game")
@@ -502,8 +509,7 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
         draw_ingame()
         piece_selection_menu.draw(my_team)
 
-    if active_uis["chat"] and ite3 > 1:
-        ite3 = 0
+    if active_uis["chat"]:
         chat_menu.draw()
 
     if active_uis["configuration"]:
@@ -583,7 +589,7 @@ for song in sound_player.UI_SONGS:  # plays and specefically selects the song th
 ite0 = 0
 ite1 = 0
 ite2 = 0
-ite3 = 0
+
 
 init_time = time.time()  # saves the time when the loop was entered
 while True:  # Main loop
@@ -696,6 +702,10 @@ while True:  # Main loop
 
                 elif check_ui_allowance(Media.rects["chat_btn"]) and collidepoint_with_sound(Media.rects["chat_btn"]["rect"], event.pos):  # check if btn was clicked
                     active_uis["chat"] = not active_uis["chat"]
+                    if active_uis["chat"]:
+                        clases.Chat.show_input()
+                    else:
+                        clases.Chat.hide_input()
 
                 elif check_ui_allowance(Media.rects["seleccionar_foto_btn"]) and collidepoint_with_sound(Media.rects["seleccionar_foto_btn"]["rect"], event.pos):  # check if btn was clicked
                     selected_file_path = game.open_file_dialog()
@@ -734,6 +744,17 @@ while True:  # Main loop
                     else:
                         clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer simbolos extraños.", 8)
 
+                elif check_ui_allowance(Media.useful_rects["send_btn_chat"]) and collidepoint_with_sound(Media.useful_rects["send_btn_chat"]["rect"], event.pos):  # if the send btn was clicked
+
+                    msg_text = chat_menu.input.get_text().strip()  # get the text from the input
+
+                    if re.match(r"^[\w\sáéíóúÁÉÍÓÚñÑ.,;:!?()\"\'/\n-]*$", msg_text) and 0 < len(msg_text) < 100:  # the message must follow some rules
+
+                        clases.Chat.add("Tú", msg_text, time.strftime("%H:%M"))
+
+                        msg_text = msg_text.replace("-", "=G?")
+                        sckt.send(f"chat-{msg_text}")
+
                 elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # if the shrink btn was clicked resize eveything to the due size
 
                     shrink_state = not shrink_state  # pulsator to conmutator logic
@@ -743,28 +764,38 @@ while True:  # Main loop
                         window.moveTo(game.width//6, game.height//7)  # move the window
                         game.set_up_window(1.4)
 
+                        manager = pygame_gui.UIManager((game.width, game.height))  # as we cant change the size of the manager, we have to create a new one
+
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
+                        Fonts.resize_fonts()
                         clases.Piece.resize(active_pieces)
-                        set_mouse_usage(True, False)
 
+                        clases.Chat.resize(manager)
                         join_match.resize()
                         profile_menu.resize()
+
+                        set_mouse_usage(True, False)
 
                     else:
 
                         game.set_up_window(1, pygame.NOFRAME)
                         window.moveTo(0, 0)
 
+                        manager = pygame_gui.UIManager((game.width, game.height))
+
                         game.create_center_points()
                         Media.resize_metrics(game.height)
                         Media.resize(game.height)
+                        Fonts.resize_fonts()
                         clases.Piece.resize(active_pieces)
-                        set_mouse_usage(False, True)
 
+                        clases.Chat.resize(manager)
                         join_match.resize()
                         profile_menu.resize()
+
+                        set_mouse_usage(False, True)
 
                 # GOING THROUGH THE MENUS
                 elif check_ui_allowance(Media.rects["configuration_btn"]) and collidepoint_with_sound(Media.rects["configuration_btn"]["rect"], event.pos):
@@ -971,9 +1002,6 @@ while True:  # Main loop
             elif (pygame.key.name(event.key) == "d"):
                 active_pieces[selected_piece].move(0, -1, True)
 
-            elif (pygame.key.name(event.key) == "c"):
-                clases.Chat.add("yo", time.strftime("%H:%M"), f"hola{ite0}")
-
             elif (pygame.key.name(event.key) == "m"):
                 try:
                     sound_player.stopmusic()
@@ -1027,7 +1055,6 @@ while True:  # Main loop
     ite0 += 1  # iterator used to control some events
     ite1 += 1
     ite2 += 1
-    ite3 += 1
 
     # FPS CONTER
     loop_count += 1  # Increment the counter on each loop

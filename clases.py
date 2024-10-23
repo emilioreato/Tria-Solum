@@ -600,8 +600,7 @@ class MatchCreation:
         ClockAnimation.draw()
 
     def render_ip_text():
-        font = pygame.font.Font(None, Game.height//34)
-        MatchCreation.ip_text = font.render(f"Clave: {online_tools.Online.public_ip}", True, Game.DARK_GREY)
+        MatchCreation.ip_text = Fonts.ip_text.render(f"Clave: {online_tools.Online.public_ip}", True, Game.DARK_GREY)
         MatchCreation.ip_text_rect = MatchCreation.ip_text.get_rect(center=(Game.width/2,  Game.height/1.98))
 
 
@@ -727,10 +726,10 @@ class Chat:
     ]
 
     def __init__(self, manager) -> None:
-        Chat.input = pygame.Rect()
-        Chat.input = pygame_gui.elements.UITextEntryLine(relative_rect=Chat.input, manager=manager)
+        # Chat.input_r = pygame.Rect()
+        # Chat.input = pygame_gui.elements.UITextEntryLine(relative_rect=Chat.input_r, manager=manager)
 
-        Chat.resize()
+        Chat.resize(manager)
 
         Chat.hide_input()
 
@@ -739,8 +738,15 @@ class Chat:
 
         Game.screen.blit(Media.sized["chat_ui"], (Media.metrics["chat_ui"]["x"], Media.metrics["chat_ui"]["y"]))
 
-        max_chat_height = Media.metrics["chat_ui"]["h"]*0.8
-        chat_init_height = Media.metrics["chat_ui"]["y"]-Media.metrics["chat_ui"]["h"]*0.1
+        # rect4 = pygame.rect.Rect(Media.useful_rects_metrics["send_btn_chat"]["x"], Media.useful_rects_metrics["send_btn_chat"]["y"], Media.useful_rects_metrics["send_btn_chat"]["w"], Media.useful_rects_metrics["send_btn_chat"]["h"])
+        # pygame.draw.rect(Game.screen, (255, 255, 125), rect4)
+
+        max_chat_height = Media.metrics["chat_ui"]["h"]*0.67
+        chat_init_height = Media.metrics["chat_ui"]["y"]+Media.metrics["chat_ui"]["h"]-Media.metrics["chat_ui"]["h"]*0.16
+
+        # chat_init_height2 = Media.metrics["chat_ui"]["h"]*0.16
+
+        # pygame.draw.rect(Game.screen, (255, 255, 125), pygame.rect.Rect(Media.metrics["chat_ui"]["x"]-50, Media.metrics["chat_ui"]["y"]+Media.metrics["chat_ui"]["h"]-max_chat_height-chat_init_height2, 70, max_chat_height))
 
         chars_height = Media.fonts_metrics["chat_msg_font"]
 
@@ -786,16 +792,23 @@ class Chat:
         Chat.msj_history.insert(0, {"msg_info": msg, "render": render})  # we store both the render and the info about the message in an dict and add that to the general list of messages
         # we insert the message at the start of the list so then we can go thought the list more easily
 
-    @staticmethod
-    def resize():
-        Chat.input.set_dimensions((Media.chat_input_metrics["input"]["w"], Media.chat_input_metrics["input"]["h"]))  # Cambiar tamaño
-        Chat.input.set_position((Media.chat_input_metrics["input"]["x"], Media.chat_input_metrics["input"]["y"]))   # Cambiar posición
+    @ staticmethod
+    def resize(manager):
+        try:
+            Chat.input.kill()
+        except:
+            pass
+        Chat.input_r = pygame.Rect()
+        Chat.input = pygame_gui.elements.UITextEntryLine(relative_rect=Chat.input_r, manager=manager)
 
-    @staticmethod
+        Chat.input.set_position((Media.chat_input_metrics["x"], Media.chat_input_metrics["y"]))   # Cambiar posición
+        Chat.input.set_dimensions((Media.chat_input_metrics["w"], Media.chat_input_metrics["h"]))  # Cambiar tamaño
+
+    @ staticmethod
     def show_input():
         Chat.input.show()
 
-    @staticmethod
+    @ staticmethod
     def hide_input():
         Chat.input.hide()
 
@@ -811,7 +824,7 @@ class Warning:
     def __init__(self) -> None:
         pass
 
-    @staticmethod
+    @ staticmethod
     def draw():
 
         if Warning.show_warning:

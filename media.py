@@ -72,40 +72,13 @@ class Media:
     def resize_metrics(height):
         width = height*(16/9)
 
-        Media.fonts_metrics = {
-            "chat_msg_font": height//50,
-            "warning_title_font": height//30,
-            "warning_messsage_font": height//44,
-        }
-
         Media.pieces_size = height/14
 
-        Media.piece_selection_reference_info = [{"x": height/0.64, "y": height / 3, "specie": "mage"},
-                                                {"x": height/0.64, "y": height / 2.25, "specie": "archer"},
-                                                {"x": height/0.64, "y": height / 1.7, "specie": "knight"}]
-
-        Media.join_match_metrics = {"text_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
-                                    "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
-                                    }
-
-        Media.profile_menu_metrics = {"nickname_input": {"x": height/1.81, "y": height / 2.09, "w": height/5, "h": height/18.5},
-                                      "slogan_input": {"x": height/1.81, "y": height / 1.805, "w": height/5, "h": height/18.5},
-                                      }
-
-        Media.chat_input_metrics = {"input": {"x": height/0.8, "y":  height / 6, "w": height/5, "h": height/18.5},
-                                    }
-
-        Media.useful_rects_metrics = {"wallet_btc": {"x": height/1.536, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
-                                      "wallet_eth": {"x": height/0.973, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
-                                      }
-
-        Media.slider_metrics = (height/1.35, height / 2.25)
-
-        Media.clock_animation_metrics = {
-            "match_creation": (height/0.957, height / 2.578),
-            "match_creation_ready": (height/0.957, height / 1.4),
-            "join_match_ready": (height/1.166, height / 2.216),
-            "join_match": (height/0.957, height / 1.6)
+        Media.fonts_metrics = {
+            "ip_text": height//34,
+            "chat_msg_font": height//44,
+            "warning_title_font": height//30,
+            "warning_messsage_font": height//44,
         }
 
         Media.metrics = {  # DONT MAKE A KEY "MAKE_RECT" TRUE BECAUSE IT WONT MATTER, IT WONT MAKE THE RECTANGLE ANYWAY. later in the code the rectangles are created when in the keys there is the keyword "make_rect" so if you dont want the rect, just doesnt even speficy it
@@ -136,7 +109,7 @@ class Media:
             "clk_3": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_4": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
 
-            "chat_ui": {"x": height/0.8, "y":  height / 6.83, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
+            "chat_ui": {"x": height/0.7, "y":  height / 7.073, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
             "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "piece_selection_ui": {"x": height/0.693, "y":  height / 6.83, "w": height / (1.6*2), "h": height / 1.6, "make_rect": False},
             "donations_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
@@ -158,6 +131,37 @@ class Media:
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
             "ingresar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/1.8, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": ("match_creation_ready", "join_match_ready")},
             "configuration_btn": {"x": width/2-((height*(1280/222))/32)-height/32, "y":  height/1.7, "w": (height*(1280/222))/32, "h": height/32, "use_rect_in": "lobby"},
+        }
+
+        Media.piece_selection_reference_info = [{"x": height/0.64, "y": height / 3, "specie": "mage"},
+                                                {"x": height/0.64, "y": height / 2.25, "specie": "archer"},
+                                                {"x": height/0.64, "y": height / 1.7, "specie": "knight"}]
+
+        Media.join_match_metrics = {"text_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
+                                    "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
+                                    }
+
+        Media.profile_menu_metrics = {"nickname_input": {"x": height/1.81, "y": height / 2.09, "w": height/5, "h": height/18.5},
+                                      "slogan_input": {"x": height/1.81, "y": height / 1.805, "w": height/5, "h": height/18.5},
+                                      }
+
+        Media.chat_input_metrics = {"x": Media.metrics["chat_ui"]["x"]+height/100,
+                                    "y": Media.metrics["chat_ui"]["y"]+height/4.13,
+                                    "w": height/4.2,
+                                    "h": height/26, }
+
+        Media.useful_rects_metrics = {"wallet_btc": {"x": height/1.536, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
+                                      "wallet_eth": {"x": height/0.973, "y": height / 1.65, "w": height/7.5, "h": height/39, "use_rect_in": "donations"},
+                                      "send_btn_chat": {"x": Media.metrics["chat_ui"]["x"]+height/3.55, "y": Media.metrics["chat_ui"]["y"]+height/4.05, "w": height/28, "h": height/34, "use_rect_in": "chat"},
+                                      }
+
+        Media.slider_metrics = (height/1.35, height / 2.25)
+
+        Media.clock_animation_metrics = {
+            "match_creation": (height/0.957, height / 2.578),
+            "match_creation_ready": (height/0.957, height / 1.4),
+            "join_match_ready": (height/1.166, height / 2.216),
+            "join_match": (height/0.957, height / 1.6)
         }
 
         Media.do_not_use_for_hover = [  # the list of images or rects that should not change the cursor when hovered
@@ -215,6 +219,7 @@ class Fonts:
 
     def resize_fonts():
 
+        Fonts.ip_text = pygame.font.Font(None, Media.fonts_metrics["ip_text"])
         Fonts.chat_msg_font = pygame.font.Font(None, Media.fonts_metrics["chat_msg_font"])
         Fonts.warning_title_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
         Fonts.warning_messsage_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
