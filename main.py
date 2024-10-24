@@ -64,8 +64,12 @@ active_uis = {
 }
 
 players_info = {
-    "me": {"nickname": "You", "slogan": "", "profile_picture": "default", },
-    "enemy": {"nickname": "Enemy", "slogan": "", "profile_picture": "default", },
+    "me": {"nickname": game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"),
+           "slogan": game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"),
+           "profile_picture": "default", },
+    "enemy": {"nickname": "Enemy",
+              "slogan": "",
+              "profile_picture": "default", },
 }
 
 
@@ -218,12 +222,14 @@ def receive_messages():  # This function receives messages from the server while
 
         for entry in entry.split(";"):  # iterates over each message that are separated by ";".
 
-            if type(entry) == list:
-                if entry[-1] == "":
-                    entry.pop(-1)  # gets rid of the last item of the list if it is an empty string
+            if entry == "":
+                continue  # gets rid of the last item of the list if it is an empty string
 
             args = entry.split("-")  # gets all the arguments in a list. the fisrt item of the list is the action btw
             print(args)
+
+            for i, arg in enumerate(args):
+                args[i] = arg.replace("=G?", "-")  # this lines replaces the =G? with - so it doesnt break the chat and the format. before sending the msg the enemy replace the possible - with =G?. its just encriptation
 
             match args[0]:  # decides what to do based on the action received
                 case "attacked":  # id-id2 . thats the format this case expects to receive. id is the identifier of the attacker and id2 is the identifier of the attacked piece
@@ -277,44 +283,50 @@ def receive_messages():  # This function receives messages from the server while
                     selected_piece = None
 
                 case "chat":  # if the enemy as sent us a msg lets print it on the chat
-                    args[1] = args[1].replace("=G?", "-")  # this lines replaces the =G? with - so it doesnt break the chat. before sending the msg the enemy replace the possible - with =G?. its just encriptation
                     clases.Chat.add(players_info["enemy"]["nickname"], args[1], time.strftime("%H:%M"))
 
                 case "exit":
                     print("the enemy has abandoned the game")
 
                 case "setup":
+                    # gets the info the server sent
                     global enemy_team, my_team, current_turn
                     enemy_team = args[1]
                     my_team = args[2]
                     current_turn = args[3]
 
-                    sckt.send("ready")
+                    if not "Tú" == args[4]:  # if the user nickname is not the default ("Tú") then we rename it
+                        players_info["enemy"]["nickname"] = args[4]
+                    else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemy
+                        players_info["enemy"]["nickname"] = "Enemy"
+
+                    players_info["enemy"]["slogan"] = args[5]
+
+                    # sending its own info to the client
+                    slogan = players_info["me"]["slogan"]
+                    slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
+
+                    sckt.send("ready-"+players_info["me"]["nickname"]+"-"+slogan)
 
                 case "ready":
                     global match_configured
                     match_configured = True
 
-                case "pieces_have_been_chosen":
+                    if sckt.mode == "server":  # the server receives the info from the client
+
+                        if not "Tú" == args[1]:  # if the user nickname is not the default ("Tú") then we rename it
+                            players_info["enemy"]["nickname"] = args[1]
+                        else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemy
+                            players_info["enemy"]["nickname"] = "Enemy"
+
+                        players_info["enemy"]["slogan"] = args[2]
+
+                case "pieces_have_been_chosen":  # case used to know when the enemy has chosen his pieces and get into the ingame
                     global pieces_have_been_chosen
                     pieces_have_been_chosen = True
 
                 case _:
                     print("unknown command:", args[0])
-
-
-def match_set_up2():
-
-    if (play_online):
-        pass
-    #    assign_teams()
-    # assign_turn()
-
-    active_uis["join_match_ready"] = False  # after the turns have been assigned then we want to go into the piece selection menu
-    active_uis["match_creation_ready"] = False
-    active_uis["piece_selection"] = True
-    clases.MatchCreation.show_ingresar_btn = False
-    clases.ClockAnimation.set_animation_status(False)
 
 
 def match_set_up():
@@ -334,10 +346,10 @@ def match_set_up():
 
             current_turn = random.choice(["blue", "red"])  # randomly chooses the team of the player
 
-            nickname = game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read")
-            slogan = game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read")
+            slogan = players_info["me"]["slogan"]
+            slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
 
-            sckt.send("setup-"+my_team+"-"+enemy_team+"-"+current_turn)
+            sckt.send("setup-"+my_team+"-"+enemy_team+"-"+current_turn+"-"+players_info["me"]["nickname"]+"-"+slogan)
 
     while True:
         time.sleep(0.05)
@@ -426,12 +438,14 @@ def finish_program():  # this function closes the program
     sys.exit()
 
 
-def change_turn():  # changes the current turn from blue to red or red to blue
+def change_turn(send=False):  # changes the current turn from blue to red or red to blue
     global current_turn
     if current_turn == "blue":
         current_turn = "red"
     else:
         current_turn = "blue"
+    if play_online and send:
+        sckt.send("turn")
     print(f"Turno del equipo {current_turn}")  # Mensaje para depuración
 
 
@@ -636,8 +650,10 @@ ite1 = 0
 ite2 = 0
 
 
+# MAIN LOOP
+
 init_time = time.time()  # saves the time when the loop was entered
-while True:  # Main loop
+while True:
 
     # if (ite0 == 400 and active_uis["ingame"]):
     # print("wow", len(active_pieces))
@@ -726,15 +742,15 @@ while True:  # Main loop
                 if active_uis["ingame"]:
                     if my_team == current_turn or not play_online:
                         if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
-                            change_turn()
-                            if play_online:
-                                sckt.send("turn")
-                            print("changed turn")
+                            change_turn(send=True)
 
                 if check_ui_allowance(Media.rects["setting_btn"]) and collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
+
                     active_uis["configuration"] = not active_uis["configuration"]
+
                     if active_uis["join_match"] or active_uis["join_match_ready"]:
                         join_match.show_input()
+
                     if active_uis["configuration"]:
                         join_match.hide_input()
 
@@ -804,42 +820,30 @@ while True:  # Main loop
 
                         manager = pygame_gui.UIManager((game.width, game.height))  # as we cant change the size of the manager, we have to create a new one
 
-                        game.create_center_points()
-                        Media.resize_metrics(game.height)
-                        Media.resize(game.height)
-                        Fonts.resize_fonts()
-                        clases.Piece.resize(active_pieces)
-
-                        chat_menu.resize(manager)
-                        if not active_uis["chat"]:
-                            chat_menu.hide_input()
-
-                        join_match.resize()
-                        profile_menu.resize()
-
                         set_mouse_usage(True, False)
 
                     else:
-
                         game.set_up_window(1, pygame.NOFRAME)
                         window.moveTo(0, 0)
 
                         manager = pygame_gui.UIManager((game.width, game.height))
 
-                        game.create_center_points()
-                        Media.resize_metrics(game.height)
-                        Media.resize(game.height)
-                        Fonts.resize_fonts()
-                        clases.Piece.resize(active_pieces)
-
-                        chat_menu.resize(manager)
-                        if not active_uis["chat"]:
-                            chat_menu.hide_input()
-
-                        join_match.resize()
-                        profile_menu.resize()
-
                         set_mouse_usage(False, True)
+
+                    game.create_center_points()
+                    Media.resize_metrics(game.height)
+                    Media.resize(game.height)
+                    Fonts.resize_fonts()
+                    clases.Piece.resize(active_pieces)
+
+                    chat_menu.resize(manager)
+                    if not active_uis["chat"]:
+                        chat_menu.hide_input()
+
+                    join_match.resize()
+                    profile_menu.resize()
+
+                    manager.ui_theme.cursor_blink_time = 0.5
 
                 # GOING THROUGH THE MENUS
                 elif check_ui_allowance(Media.rects["configuration_btn"]) and collidepoint_with_sound(Media.rects["configuration_btn"]["rect"], event.pos):

@@ -83,7 +83,7 @@ class Game:
 
         if not os.path.exists(file_path):  # creates the file if it doesnt exist
             with open(file_path, 'w') as file:
-                file.write("pfp: resources\\images\\indicator.png \nnickname: Invitado\nslogan: Clan anónimo")  # writes the default values
+                file.write("pfp: resources\\images\\indicator.png \nnickname: Tú\nslogan: Clan anónimo")  # writes the default values
 
         else:
             with open(file_path, 'r') as file:
@@ -92,8 +92,10 @@ class Game:
             if mode == "read":
                 for line in lines:
                     if text_to_search in line:
+                        print("".join(line.split(": ")[1:]).strip())
                         return "".join(line.split(": ")[1:]).strip()  # this returns the exact information i want. not the whole line
 
+                        # return line
             else:
                 with open(file_path, 'w') as file:
                     print("writing")
