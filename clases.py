@@ -1,11 +1,10 @@
 import os
+import sys
 import math
 import numpy
 import pygame
 import pyautogui
 import threading
-import wave
-import pyaudio
 from media import Media, Fonts
 from win32con import ENUM_CURRENT_SETTINGS
 from win32api import EnumDisplaySettings
@@ -13,7 +12,6 @@ import random
 import string
 from online_utilities import online_tools
 import pygame_gui
-import sys
 from PyQt5.QtWidgets import QApplication, QFileDialog
 import time
 
@@ -94,7 +92,7 @@ class Game:
             if mode == "read":
                 for line in lines:
                     if text_to_search in line:
-                        return line
+                        return "".join(line.split(": ")[1:]).strip()  # this returns the exact information i want. not the whole line
 
             else:
                 with open(file_path, 'w') as file:

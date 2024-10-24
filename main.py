@@ -63,11 +63,11 @@ active_uis = {
     "profile": False,
 }
 
-enemy_info = {
-    "nickname": "Enemy",
-    "slogan": "Lets Win",
-    "profile_picture": "default",
+players_info = {
+    "me": {"nickname": "You", "slogan": "", "profile_picture": "default", },
+    "enemy": {"nickname": "Enemy", "slogan": "", "profile_picture": "default", },
 }
+
 
 my_pieces = []
 reference_pieces = []
@@ -76,6 +76,9 @@ active_pieces = []
 conection_state = False
 
 selected_piece = None
+
+match_configured = False  # variables related to the state of te communication at the start of the match
+pieces_have_been_chosen = False
 
 current_turn = None
 
@@ -275,37 +278,37 @@ def receive_messages():  # This function receives messages from the server while
 
                 case "chat":  # if the enemy as sent us a msg lets print it on the chat
                     args[1] = args[1].replace("=G?", "-")  # this lines replaces the =G? with - so it doesnt break the chat. before sending the msg the enemy replace the possible - with =G?. its just encriptation
-                    clases.Chat.add(enemy_info["nickname"], args[1], time.strftime("%H:%M"))
+                    clases.Chat.add(players_info["enemy"]["nickname"], args[1], time.strftime("%H:%M"))
 
                 case "exit":
                     print("the enemy has abandoned the game")
+
+                case "setup":
+                    global enemy_team, my_team, current_turn
+                    enemy_team = args[1]
+                    my_team = args[2]
+                    current_turn = args[3]
+
+                    sckt.send("ready")
+
+                case "ready":
+                    global match_configured
+                    match_configured = True
+
+                case "pieces_have_been_chosen":
+                    global pieces_have_been_chosen
+                    pieces_have_been_chosen = True
 
                 case _:
                     print("unknown command:", args[0])
 
 
-def assign_teams():  # this function assigns the teams to the players
-    global my_team
-    if (sckt.mode == "server"):  # choosing of the teams and setting up the socket connection
-        my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
-        sckt.send(my_team, delimiter="")
-        if my_team == "blue":  # a quick definition of the enemy team
-            enemy_team = "red"
-        else:
-            enemy_team = "blue"
-    else:
-        enemy_team = sckt.recieve()
-        if enemy_team == "blue":  # a quick definition of the enemy team
-            my_team = "red"
-        else:
-            my_team = "blue"
-
-
-def match_set_up():
+def match_set_up2():
 
     if (play_online):
-        assign_teams()
-    assign_turn()
+        pass
+    #    assign_teams()
+    # assign_turn()
 
     active_uis["join_match_ready"] = False  # after the turns have been assigned then we want to go into the piece selection menu
     active_uis["match_creation_ready"] = False
@@ -314,14 +317,41 @@ def match_set_up():
     clases.ClockAnimation.set_animation_status(False)
 
 
-def assign_turn():
-    global current_turn
-    current_turn = random.choice(["blue", "red"])
-    if play_online:
-        if (sckt.mode == "server"):
-            sckt.send(current_turn, delimiter="")
-        else:
-            current_turn = sckt.recieve()
+def match_set_up():
+
+    if (play_online):
+
+        if sckt.mode == "server":
+
+            global enemy_team, my_team, current_turn, nickname, slogan
+
+            my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
+
+            if my_team == "blue":  # a quick definition of the enemy team
+                enemy_team = "red"
+            else:
+                enemy_team = "blue"
+
+            current_turn = random.choice(["blue", "red"])  # randomly chooses the team of the player
+
+            nickname = game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read")
+            slogan = game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read")
+
+            sckt.send("setup-"+my_team+"-"+enemy_team+"-"+current_turn)
+
+    while True:
+        time.sleep(0.05)
+        if match_configured:
+            break
+
+    if sckt.mode == "server":
+        sckt.send("ready")
+
+    active_uis["join_match_ready"] = False  # after the turns have been assigned then we want to go into the piece selection menu
+    active_uis["match_creation_ready"] = False
+    active_uis["piece_selection"] = True
+    clases.MatchCreation.show_ingresar_btn = False
+    clases.ClockAnimation.set_animation_status(False)
 
 
 def play_intro_video():
@@ -447,7 +477,7 @@ def collect_msg_and_send_it():
 
     if re.match(r"^[\w\sáéíóúÁÉÍÓÚñÑ.,;:!?()*+\"\'/\n-]*$", msg_text) and 0 < len(msg_text) < 100:  # the message must follow some rules
 
-        clases.Chat.add("Tú", msg_text, time.strftime("%H:%M"))  # add the message to the chat
+        clases.Chat.add(players_info["me"]["nickname"], msg_text, time.strftime("%H:%M"))  # add the message to the chat
 
         clases.Chat.input.set_text("")  # clear the input
 
@@ -780,7 +810,10 @@ while True:  # Main loop
                         Fonts.resize_fonts()
                         clases.Piece.resize(active_pieces)
 
-                        clases.Chat.resize(manager)
+                        chat_menu.resize(manager)
+                        if not active_uis["chat"]:
+                            chat_menu.hide_input()
+
                         join_match.resize()
                         profile_menu.resize()
 
@@ -799,7 +832,10 @@ while True:  # Main loop
                         Fonts.resize_fonts()
                         clases.Piece.resize(active_pieces)
 
-                        clases.Chat.resize(manager)
+                        chat_menu.resize(manager)
+                        if not active_uis["chat"]:
+                            chat_menu.hide_input()
+
                         join_match.resize()
                         profile_menu.resize()
 
@@ -866,6 +902,8 @@ while True:  # Main loop
                         join_match.hide_input()  # if the user came from the joining match ui then hide the input as it souldnt be changed anymore
 
                     clases.ClockAnimation.set_animation_status(True, "join_match_ready")  # show the clock animation
+
+                    threading.Thread(target=receive_messages, daemon=True).start()  # once the user created all his pieces, start listening for the enemy's moves and requests. the team and turn assignations was already done before entring the piece selection menu
 
                     threading.Thread(target=match_set_up, daemon=True).start()  # start the match set up in a thread so the teams and the turns get assigned and commited. this is started in a thread so it doesnt stop the main loop while the opponent is yet to press "ingresar"
 
@@ -956,30 +994,24 @@ while True:  # Main loop
                         active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=change_mana)
                     # print(active_pieces[selected_piece].mana)
 
-                    """if active_uis["ingame"] and play_online:
-                        pass
-                    el"""
-
                     if active_uis["piece_selection"]:
 
                         my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
 
                         if (len(my_pieces) >= 3):
-                            active_uis["piece_selection"] = False
 
                             if play_online:
-                                msg = "Pieces have been chosen. Start."
+                                msg = "pieces_have_been_chosen"
                                 sckt.send(msg, delimiter="")
 
-                                while True:
-                                    received = sckt.recieve()  # waits for the other player to catchup
-                                    if (received == msg):
+                                while True:  # waits for the other player to catchup
+                                    time.sleep(0.05)
+                                    if pieces_have_been_chosen:
+                                        active_uis["piece_selection"] = False
                                         break
 
                                 for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
                                     sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
-
-                                threading.Thread(target=receive_messages, daemon=True).start()  # once the user created all his pieces, start listening for the enemy's moves and requests. the team and turn assignations was already done before entring the piece selection menu
 
                             my_pieces = {}  # clear pieces list
                             active_uis["ingame"] = True  # start the game
@@ -1006,14 +1038,8 @@ while True:  # Main loop
             elif (pygame.key.name(event.key)) == "j":
                 dev_mouse.Measure.measure_distance()  # prints the coordinates of the mouse, used for developing reasons.
 
-            elif (pygame.key.name(event.key) == "w"):
-                active_pieces[selected_piece].move(-1, 0, True)
-
-            elif (pygame.key.name(event.key) == "s"):
-                active_pieces[selected_piece].move(1, 0, True)
-
-            elif (pygame.key.name(event.key) == "a"):
-                active_pieces[selected_piece].move(0, 1, True)
+            # elif (pygame.key.name(event.key) == "w"):
+            #    active_pieces[selected_piece].move(-1, 0, True)
 
             elif (pygame.key.name(event.key) == "return") and clases.Chat.focused:
                 collect_msg_and_send_it()
