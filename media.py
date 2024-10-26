@@ -76,6 +76,8 @@ class Media:
         Media.pieces_size = height/14
 
         Media.fonts_metrics = {
+            "nickname_name_bar": height//34,  # height//34,
+            "slogan_name_bar": height//48,  # height//34,
             "ip_text": height//42,  # height//34,
             "chat_msg_font": height//52,  # height//44,
             "warning_title_font": height//38,  # height//30,
@@ -220,6 +222,9 @@ class Media:
 class Fonts:
 
     def resize_fonts():
+
+        Fonts.nickname_name_bar = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["nickname_name_bar"])
+        Fonts.slogan_name_bar = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["slogan_name_bar"])
 
         Fonts.ip_text = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["ip_text"])
         Fonts.chat_msg_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["chat_msg_font"])

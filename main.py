@@ -126,7 +126,7 @@ for card_type, cards in inventory.cards.items():
 
 def setup():
 
-    global piece_selection_menu, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, name_bar, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -146,6 +146,7 @@ def setup():
     chat_menu = clases.Chat(manager)
     warning_manager = clases.Warning()
     donations_menu = clases.Donation_Menu(manager)
+    name_bar = clases.Name_Bar()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -524,13 +525,14 @@ def draw_ingame():
     for piece in active_pieces:    # displaying all pieces and their health and mana bars
 
         piece.draw(game.screen, piece.image)
-        piece.draw_bars(my_team, my_team_count, enemy_count, players_info["enemy"]["nickname"],players_info["enemy"]["slogan"])
+        piece.draw_bars(my_team, my_team_count, enemy_count)
 
         if piece.team == my_team:
             my_team_count += 1
         else:
             enemy_count += 1
 
+    name_bar.draw()
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
@@ -842,6 +844,7 @@ while True:
 
                     join_match.resize()
                     profile_menu.resize()
+                    name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
 
                     manager.ui_theme.cursor_blink_time = 0.5
 
@@ -1012,6 +1015,7 @@ while True:
                                     time.sleep(0.05)
                                     if pieces_have_been_chosen:
                                         active_uis["piece_selection"] = False
+                                        name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
                                         break
 
                                 for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list

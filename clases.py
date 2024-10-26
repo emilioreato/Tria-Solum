@@ -274,8 +274,6 @@ class Piece:
         else:
             Game.screen.blit(Media.sized["enemy_bar"], (bar_x, bar_y))
 
-        Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
-
     @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
         return index % Game.board_size, index // Game.board_size
@@ -719,6 +717,24 @@ class Profile_Menu:
         Game.screen.blit(Media.sized["seleccionar_foto_btn"], (Media.metrics["seleccionar_foto_btn"]["x"], Media.metrics["seleccionar_foto_btn"]["y"]))
         Game.screen.blit(Media.sized["guardar_apodo_btn"], (Media.metrics["guardar_apodo_btn"]["x"], Media.metrics["guardar_apodo_btn"]["y"]))
         Game.screen.blit(Media.sized["guardar_lema_btn"], (Media.metrics["guardar_lema_btn"]["x"], Media.metrics["guardar_lema_btn"]["y"]))
+
+
+class Name_Bar:
+
+    def __init__(self) -> None:
+        Name_Bar.resize()
+
+    @staticmethod
+    def draw():
+
+        Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
+        Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
+        Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
+
+    @staticmethod
+    def resize(nickname="A", slogan="b"):
+        Name_Bar.nickname_text = Fonts.nickname_name_bar.render(nickname, True, Game.DARK_GREY)
+        Name_Bar.slogan_text = Fonts.slogan_name_bar.render(slogan, True, Game.DARK_GREY)
 
 
 class Chat:
