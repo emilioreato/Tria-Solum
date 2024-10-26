@@ -225,7 +225,7 @@ class Piece:
     def attack(self, atacked_piece):
         atacked_piece.modify_hp(0 - self.damage)
 
-    def draw_health_bar(self, my_team, my_team_count, enemy_count):
+    def draw_bars(self, my_team, my_team_count, enemy_count):
 
         if self.team == my_team:
             is_my_piece = True
@@ -273,6 +273,8 @@ class Piece:
             Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
         else:
             Game.screen.blit(Media.sized["enemy_bar"], (bar_x, bar_y))
+
+        Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
 
     @ staticmethod
     def b64index_to_grid(index):  # it return the conversion from a 1d array index to a 2d array index (used to convert points_list index to the board/grid index)
@@ -762,7 +764,7 @@ class Chat:
 
         # pygame.draw.rect(Game.screen, (255, 255, 125), pygame.rect.Rect(Media.metrics["chat_ui"]["x"]-50, Media.metrics["chat_ui"]["y"]+Media.metrics["chat_ui"]["h"]-max_chat_height-chat_init_height2, 70, max_chat_height))
 
-        chars_height = Media.fonts_metrics["chat_msg_font"]
+        chars_height = round(Media.fonts_metrics["chat_msg_font"]+Media.fonts_metrics["chat_msg_font"]*0.08)
 
         max_lines_amount = int(max_chat_height//chars_height)
 
@@ -887,8 +889,9 @@ class Warning:
             x_anim = numpy.interp(coeficient, [0, 1], [0-Media.metrics["warning_ui"]["w"]*1.1, 0])  # this is the actual offset of the image and text and we multiply the width by 1.1 so it moves a little bit more than the width of the image away of the screen
 
             Game.screen.blit(Media.sized["warning_ui"], (Media.metrics["warning_ui"]["x"] + x_anim, Media.metrics["warning_ui"]["y"]))
-            Game.screen.blit(Warning.title, (Media.metrics["warning_ui"]["x"]+Game.height/12 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/40))
+            Game.screen.blit(Warning.title, (Media.metrics["warning_ui"]["x"]+Game.height/12 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/45))
             Game.screen.blit(Warning.message, (Media.metrics["warning_ui"]["x"]+Game.height/40 + x_anim, Media.metrics["warning_ui"]["y"]+Game.height/13.2))
+
             if time.time() - Warning.init_time > Warning.duration:
                 Warning.show_warning = False
                 Warning.sound = True
@@ -897,7 +900,11 @@ class Warning:
     def warn(title, message, duration, sound=True):
 
         Warning.title = Fonts.warning_title_font.render(title, True, Game.LIGHT_GREY)
-        Warning.message = Fonts.warning_messsage_font.render(Fonts.transform_text_line_to_paragraph(message, 38)[0], True, Game.LIGHT_GREY)
+
+        max_width = Media.metrics["warning_ui"]["w"] - Game.height/80
+        max_chars_per_line = max_width//(pygame.font.SysFont("Times New Roman", Media.fonts_metrics["chat_msg_font"]).render("x", True, (0, 0, 0)).get_width())  # this is the max number of characters that can be in a line calculated based on the width of one rendered char
+
+        Warning.message = Fonts.warning_message_font.render(Fonts.transform_text_line_to_paragraph(message, max_chars_per_line)[0], True, Game.LIGHT_GREY)
         Warning.duration = duration
         Warning.sound = sound
         Warning.show_warning = True

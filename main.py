@@ -67,7 +67,7 @@ players_info = {
     "me": {"nickname": game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"),
            "slogan": game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"),
            "profile_picture": "default", },
-    "enemy": {"nickname": "Enemy",
+    "enemy": {"nickname": "Enemigo",
               "slogan": "",
               "profile_picture": "default", },
 }
@@ -298,7 +298,7 @@ def receive_messages():  # This function receives messages from the server while
                     if not "Tú" == args[4]:  # if the user nickname is not the default ("Tú") then we rename it
                         players_info["enemy"]["nickname"] = args[4]
                     else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemy
-                        players_info["enemy"]["nickname"] = "Enemy"
+                        players_info["enemy"]["nickname"] = "Enemigo"
 
                     players_info["enemy"]["slogan"] = args[5]
 
@@ -317,7 +317,7 @@ def receive_messages():  # This function receives messages from the server while
                         if not "Tú" == args[1]:  # if the user nickname is not the default ("Tú") then we rename it
                             players_info["enemy"]["nickname"] = args[1]
                         else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemy
-                            players_info["enemy"]["nickname"] = "Enemy"
+                            players_info["enemy"]["nickname"] = "Enemigo"
 
                         players_info["enemy"]["slogan"] = args[2]
 
@@ -498,7 +498,7 @@ def collect_msg_and_send_it():
         msg_text = msg_text.replace("-", "=G?")  # replace the - symbol with =G? to avoid problems with the protocol. just encrypting it
         sckt.send(f"chat-{msg_text}")  # send the message to the enemy
     elif 0 < len(msg_text):
-        clases.Warning.warn("Mensaje inválido", "El mensaje debe tener hasta 100 caracteres y no poseer simbolos extraños.", 5)
+        clases.Warning.warn("Mensaje inválido", "El mensaje debe tener hasta 100 caracteres y no poseer símbolos extraños.", 5)
 
 
 def set_mouse_usage(visible=False, grab=True):
@@ -524,7 +524,7 @@ def draw_ingame():
     for piece in active_pieces:    # displaying all pieces and their health and mana bars
 
         piece.draw(game.screen, piece.image)
-        piece.draw_health_bar(my_team, my_team_count, enemy_count)
+        piece.draw_bars(my_team, my_team_count, enemy_count, players_info["enemy"]["nickname"],players_info["enemy"]["slogan"])
 
         if piece.team == my_team:
             my_team_count += 1
@@ -803,7 +803,7 @@ while True:
                         # clases.Profile_Menu.slogan_input_focused = False
 
                     else:
-                        clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer simbolos extraños.", 8)
+                        clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer símbolos extraños.", 8)
 
                 elif check_ui_allowance(Media.useful_rects["send_btn_chat"]) and collidepoint_with_sound(Media.useful_rects["send_btn_chat"]["rect"], event.pos):  # if the send btn was clicked
 

@@ -35,6 +35,7 @@ class Media:
             "copy_btn": pygame.image.load("resources\\icons\\paperclip_copy.png").convert_alpha(),
             "chat_btn": pygame.image.load("resources\\icons\\chat.png").convert_alpha(),
 
+            "name_bar": pygame.image.load("resources\\images\menu\\name_bar.png").convert_alpha(),
             "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar2.png").convert_alpha(),
             "enemy_bar": pygame.image.load("resources\\images\menu\\enemy_bar3.png").convert_alpha(),
 
@@ -75,10 +76,10 @@ class Media:
         Media.pieces_size = height/14
 
         Media.fonts_metrics = {
-            "ip_text": height//34,
-            "chat_msg_font": height//44,
-            "warning_title_font": height//30,
-            "warning_messsage_font": height//44,
+            "ip_text": height//42,  # height//34,
+            "chat_msg_font": height//52,  # height//44,
+            "warning_title_font": height//38,  # height//30,
+            "warning_message_font": height//44,  # height//44,
         }
 
         Media.metrics = {  # DONT MAKE A KEY "MAKE_RECT" TRUE BECAUSE IT WONT MATTER, IT WONT MAKE THE RECTANGLE ANYWAY. later in the code the rectangles are created when in the keys there is the keyword "make_rect" so if you dont want the rect, just doesnt even speficy it
@@ -100,6 +101,7 @@ class Media:
             "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": "match_creation_ready"},
             "chat_btn": {"x": height/2, "y": height / 30, "w": height / 24, "h": height / 24, "use_rect_in": "ingame"},
 
+            "name_bar": {"x": height/24, "y": height/24, "w": (height / 10) * (1280/278), "h": height / 10, "make_rect": False},
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
             "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
 
@@ -219,10 +221,10 @@ class Fonts:
 
     def resize_fonts():
 
-        Fonts.ip_text = pygame.font.Font(None, Media.fonts_metrics["ip_text"])
-        Fonts.chat_msg_font = pygame.font.Font(None, Media.fonts_metrics["chat_msg_font"])
-        Fonts.warning_title_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
-        Fonts.warning_messsage_font = pygame.font.Font(None, Media.fonts_metrics["warning_title_font"])
+        Fonts.ip_text = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["ip_text"])
+        Fonts.chat_msg_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["chat_msg_font"])
+        Fonts.warning_title_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["warning_title_font"])
+        Fonts.warning_message_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["warning_message_font"])
 
     def transform_text_line_to_paragraph(text, max_length, join=True):
         words = text.split()  # Dividir el texto en palabras
