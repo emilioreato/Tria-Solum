@@ -566,7 +566,7 @@ class Lobby:
 
 class Donation_Menu:
 
-    def __init__(self, manager):
+    def __init__(self):
         pass
 
     def draw(self):
@@ -732,7 +732,7 @@ class Name_Bar:
         Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
 
     @staticmethod
-    def resize(nickname="A", slogan="b"):
+    def resize(nickname="Enemy", slogan="Unknown clan."):
         Name_Bar.nickname_text = Fonts.nickname_name_bar.render(nickname, True, Game.DARK_GREY)
         Name_Bar.slogan_text = Fonts.slogan_name_bar.render(slogan, True, Game.DARK_GREY)
 
@@ -1089,36 +1089,35 @@ class Slider:
 class Turn_Btn:
 
     def __init__(self):
-
-        Turn_Btn.metrics = {"x": Game.height/1, "y": Game.height / 1.4, "w": Game.height / (5/1.512), "h": Game.height / 5}
-        Turn_Btn.original_image = Media.convert(pygame.image.load("resources\\images\\menu\\turn_btn.png"), "alpha")
-        Turn_Btn.image = pygame.transform.smoothscale(Turn_Btn.original_image, (Turn_Btn.metrics["w"], Turn_Btn.metrics["h"]))
-        Turn_Btn.rect = Turn_Btn.image.get_rect()
-        Turn_Btn.rect.topleft = (Turn_Btn.metrics["x"], Turn_Btn.metrics["y"])
-        Turn_Btn.image_mask = pygame.mask.from_surface(Turn_Btn.image)
+        Turn_Btn.resize()
 
     def draw(self):
 
-        Game.screen.blit(Turn_Btn.image, Turn_Btn.rect)
+        Game.screen.blit(Media.sized["turn_btn"], Turn_Btn.rect)
+
+    @staticmethod
+    def resize():
+        Turn_Btn.rect = Media.sized["turn_btn"].get_rect()
+        Turn_Btn.rect.topleft = (Media.metrics["turn_btn"]["x"], Media.metrics["turn_btn"]["y"])
+        Turn_Btn.image_mask = pygame.mask.from_surface(Media.sized["turn_btn"])
 
 
 class Mini_Flags:
 
     def __init__(self):
 
-        Mini_Flags.metrics = {"x": Game.height/0.905, "y": Game.height / 1.137, "w": Game.height / 14, "h": Game.height / 14}
-        Mini_Flags.original_image_red = Media.convert(pygame.image.load("resources\\images\\flag_red.png"), "alpha")
-        Mini_Flags.original_image_blue = Media.convert(pygame.image.load("resources\\images\\flag_blue.png"), "alpha")
-        Mini_Flags.image_red = pygame.transform.smoothscale(Mini_Flags.original_image_red, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
-        Mini_Flags.image_blue = pygame.transform.smoothscale(Mini_Flags.original_image_blue, (Mini_Flags.metrics["w"], Mini_Flags.metrics["h"]))
-        Mini_Flags.rect = Mini_Flags.image_red.get_rect()
-        Mini_Flags.rect.topleft = (Mini_Flags.metrics["x"], Mini_Flags.metrics["y"])
+        Mini_Flags.resize()
 
     def draw(self, current_turn):
         if current_turn == "blue":
-            Game.screen.blit(Mini_Flags.image_blue, Mini_Flags.rect)
+            Game.screen.blit(Media.sized["mini_flag_blue"], Mini_Flags.rect)
         else:
-            Game.screen.blit(Mini_Flags.image_red, Mini_Flags.rect)
+            Game.screen.blit(Media.sized["mini_flag_red"], Mini_Flags.rect)
+
+    @staticmethod
+    def resize():
+        Mini_Flags.rect = Media.sized["mini_flag_blue"].get_rect()
+        Mini_Flags.rect.topleft = (Media.metrics["mini_flag_blue"]["x"], Media.metrics["mini_flag_blue"]["y"])
 
 
 class Cursor:

@@ -36,6 +36,8 @@ from media import Media, Fonts
 
 
 # SETING THINGS UP
+#
+#
 
 
 pygame.init()  # initialize pygame
@@ -44,6 +46,9 @@ game.set_up_window(1.35)
 
 
 # GENERAL VARIABLES
+#
+#
+
 
 play_online = True
 # my_team = "blue"
@@ -121,7 +126,9 @@ for card_type, cards in inventory.cards.items():
     print(f"{card_type}: {[card.name for card in cards]}")
 """
 
-# USEFUL FUNCTIONS
+# PROGRAM FUNCTIONS
+#
+#
 
 
 def setup():
@@ -145,7 +152,7 @@ def setup():
     profile_menu = clases.Profile_Menu(manager)
     chat_menu = clases.Chat(manager)
     warning_manager = clases.Warning()
-    donations_menu = clases.Donation_Menu(manager)
+    donations_menu = clases.Donation_Menu()
     name_bar = clases.Name_Bar()
 
     fps = game.dev_mode.DisplayFrequency
@@ -601,6 +608,8 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
 
 
 # DEFINING ANOTHER SET UP VARIABLES
+#
+#
 
 window = pyautogui.getWindowsWithTitle("Gambit Game")[0]  # find the program window in the OS so later its position can be changed when maximizing the window
 
@@ -653,6 +662,8 @@ ite2 = 0
 
 
 # MAIN LOOP
+#
+#
 
 init_time = time.time()  # saves the time when the loop was entered
 while True:
@@ -845,6 +856,8 @@ while True:
                     join_match.resize()
                     profile_menu.resize()
                     name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
+                    turn_btn.resize()
+                    mini_flag.resize()
 
                     manager.ui_theme.cursor_blink_time = 0.5
 
@@ -1115,31 +1128,3 @@ while True:
         start_time = time.time()
 
     game.timer.tick(fps)  # set the fps to the maximun possible
-
-
-"""
-
-        if event.type == MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if clases.Profile_Menu.nickname_input.get_relative_rect().collidepoint(event.pos):
-
-                    if not clases.Profile_Menu.nickname_input_focused:  # and clases.Profile_Menu.nickname_input.get_text() == "Ingrese un apodo":
-                        clases.Profile_Menu.nickname_input.set_text("d ")  # Borrar el texto cuando se haga focus
-                        clases.Profile_Menu.nickname_input_focused = True  # Marcar que ya se hizo focoelif event.type == pygame_gui.UI_TEXT_ENTRY_FOCUSED:
-
-                else:
-
-                    clases.Profile_Menu.nickname_input.set_text("Ingrese un apodo")  # Borrar el texto cuando se haga focus
-                    clases.Profile_Menu.nickname_input_focused = False
-                
-                if clases.Profile_Menu.slogan_input.get_relative_rect().collidepoint(event.pos):
-
-                    if not clases.Profile_Menu.slogan_input_focused:  # and clases.Profile_Menu.slogan_input.get_text() == "Ingrese un lema":
-                        clases.Profile_Menu.slogan_input.set_text("")  # Borrar el texto cuando se haga focus
-                        clases.Profile_Menu.slogan_input_focused = True  # Marcar que ya se hizo focoelif event.type == pygame_gui.UI_TEXT_ENTRY_FOCUSED:
-                
-                else:
-                    clases.Profile_Menu.slogan_input.set_text("Ingrese un lema")  # Borrar el texto cuando se haga focus
-                    clases.Profile_Menu.slogan_input_focused = False
-
-"""

@@ -45,6 +45,11 @@ class Media:
             "clk_3": pygame.image.load("resources\\icons\\clock\\3.png").convert_alpha(),
             "clk_4": pygame.image.load("resources\\icons\\clock\\4.png").convert_alpha(),
 
+            "mini_flag_blue": pygame.image.load("resources\\images\\flag_blue.png").convert_alpha(),
+            "mini_flag_red": pygame.image.load("resources\\images\\flag_red.png").convert_alpha(),
+
+            "turn_btn": pygame.image.load("resources\\images\\menu\\turn_btn.png").convert_alpha(),
+
             "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
             "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
@@ -112,6 +117,11 @@ class Media:
             "clk_2": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_3": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
             "clk_4": {"x": 0, "y": 0, "w": height / 22, "h": height / 22, "make_rect": False},
+
+            "mini_flag_blue": {"x": height/0.905, "y": height / 1.137, "w": height / 14, "h": height / 14, "make_rect": False},
+            "mini_flag_red": {"x": height/0.905, "y": height / 1.137, "w": height / 14, "h": height / 14, "make_rect": False},
+
+            "turn_btn": {"x": height/1, "y": height / 1.4, "w": height / (5/1.512), "h": height / 5, "make_rect": False},
 
             "chat_ui": {"x": height/0.7, "y":  height / 7.073, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
             "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
