@@ -57,9 +57,11 @@ class Media:
             "lobby_ui": pygame.image.load("resources\\images\\menu\\lobby_ui.png").convert(),
             "perfil_ui": pygame.image.load("resources\\images\\menu\\perfil_ui.png").convert(),
             "warning_ui": pygame.image.load("resources\\images\\menu\\warning.png").convert_alpha(),
+            "end_ui": pygame.image.load("resources\\images\\menu\\end_ui.png").convert(),
 
             "lobby_background": pygame.image.load("resources\\images\\pure_background.png").convert(),
 
+            "revancha_btn": pygame.image.load("resources\\images\\menu\\revancha.png").convert(),
             "apoyanos_btn": pygame.image.load("resources\\images\\menu\\apoyanos.png").convert(),
             "perfil_btn": pygame.image.load("resources\\images\\menu\\perfil.png").convert(),
             "seleccionar_foto_btn": pygame.image.load("resources\\images\\menu\\seleccionar_foto.png").convert(),
@@ -130,16 +132,17 @@ class Media:
             "lobby_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "perfil_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
             "warning_ui": {"x": width/48, "y":  height/1.345, "w": (height*(1280/615))/4.5, "h": height/4.5, "use_rect_in": "all"},
-
+            "end_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
 
             "lobby_background": {"x": 0, "y":  0, "w": width+1, "h": height, "make_rect": False},
 
+            "revancha_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/1.7, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "end"},
             "apoyanos_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "configuration"},
             "perfil_btn": {"x": width/2+height/32, "y":  height/1.7, "w": (height*(1280/243))/32, "h": height/32, "use_rect_in": "lobby"},
             "seleccionar_foto_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.4, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
             "guardar_apodo_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.08, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
             "guardar_lema_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/1.8, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "profile"},
-            "volver_btn": {"x": width/2-((height*(1280/240))/28)/2, "y":  height/1.465, "w": (height*(1280/240))/28, "h": height/28, "use_rect_in": ("match_creation", "join_match", "profile", "match_creation_ready", "donations", "join_match_ready", "configuration")},
+            "volver_btn": {"x": width/2-((height*(1280/240))/28)/2, "y":  height/1.465, "w": (height*(1280/240))/28, "h": height/28, "use_rect_in": ("match_creation", "join_match", "profile", "end", "match_creation_ready", "donations", "join_match_ready", "configuration")},
             "crear_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "lobby"},
             "unirse_btn": {"x": width/2-((height*(1280/243))/20)/2, "y":  height/2.1, "w": (height*(1280/243))/20, "h": height/20, "use_rect_in": "lobby"},
             "generar_btn": {"x": width/2-((height*(1280/240))/20)/2, "y":  height/2.6, "w": (height*(1280/240))/20, "h": height/20, "use_rect_in": "match_creation"},
@@ -169,13 +172,15 @@ class Media:
                                       "send_btn_chat": {"x": Media.metrics["chat_ui"]["x"]+height/3.55, "y": Media.metrics["chat_ui"]["y"]+height/4.05, "w": height/28, "h": height/34, "use_rect_in": "chat"},
                                       }
 
-        Media.slider_metrics = (height/1.35, height / 2.25)
+        Media.slider_metrics = {"pos": (Media.metrics["music_btn"]["x"]+height/6.5, Media.metrics["music_btn"]["y"]+height/60),
+                                "size": (height/4.32, height / 54)}
 
         Media.clock_animation_metrics = {
             "match_creation": (height/0.957, height / 2.578),
             "match_creation_ready": (height/0.957, height / 1.4),
             "join_match_ready": (height/1.166, height / 2.216),
-            "join_match": (height/0.957, height / 1.6)
+            "join_match": (height/0.957, height / 1.6),
+            "end": (height/0.957, height / 1.6)
         }
 
         Media.do_not_use_for_hover = [  # the list of images or rects that should not change the cursor when hovered

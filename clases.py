@@ -158,6 +158,8 @@ class Sound:
 
     @staticmethod
     def play(track):
+        pygame.mixer.music.stop()  # Stops the currently playing music
+        pygame.mixer.music.unload()
         pygame.mixer.music.load(track)  # loads the track
         pygame.mixer.music.play()  # plays the track
 
@@ -609,13 +611,8 @@ class JoinMatch:
     show_ingresar_btn = False
 
     def __init__(self, manager):
-        JoinMatch.input_rect = pygame.Rect()
-        JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
 
-        JoinMatch.boton_rect = pygame.Rect()
-        JoinMatch.boton_conectar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
-
-        JoinMatch.resize()
+        JoinMatch.resize(manager)
 
         JoinMatch.hide_input()
 
@@ -629,7 +626,15 @@ class JoinMatch:
             Game.screen.blit(Media.sized["ingresar_btn"], (Media.metrics["ingresar_btn"]["x"], Media.metrics["ingresar_btn"]["y"]))
 
     @staticmethod
-    def resize():
+    def resize(manager):
+        JoinMatch.input_rect = pygame.Rect()
+        JoinMatch.input_texto = pygame_gui.elements.UITextEntryLine(relative_rect=JoinMatch.input_rect, manager=manager)
+
+        JoinMatch.boton_rect = pygame.Rect()
+        JoinMatch.boton_conectar = pygame_gui.elements.UIButton(relative_rect=JoinMatch.boton_rect, text='Conectar', manager=manager)
+
+        JoinMatch.hide_input()
+
         JoinMatch.input_texto.set_dimensions((Media.join_match_metrics["text_input"]["w"], Media.join_match_metrics["text_input"]["h"]))  # Cambiar tamaño
         JoinMatch.input_texto.set_position((Media.join_match_metrics["text_input"]["x"], Media.join_match_metrics["text_input"]["y"]))   # Cambiar posición
         JoinMatch.boton_conectar.set_dimensions((Media.join_match_metrics["btn_conectar"]["w"], Media.join_match_metrics["btn_conectar"]["h"]))  # Cambiar tamaño
@@ -643,6 +648,8 @@ class JoinMatch:
     @staticmethod
     def hide_input():
         JoinMatch.input_texto.hide()
+        JoinMatch.input_texto.set_text("Ingrese la clave")
+
         JoinMatch.boton_conectar.hide()
 
 
@@ -678,18 +685,22 @@ class Configuration_Menu:
 class Profile_Menu:
 
     def __init__(self, manager):
+
+        Profile_Menu.resize(manager)
+
+        Profile_Menu.hide_input()
+
+    @staticmethod
+    def resize(manager):
+
         Profile_Menu.nickname_input = pygame.Rect()
         Profile_Menu.nickname_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.nickname_input, manager=manager)
 
         Profile_Menu.slogan_input = pygame.Rect()
         Profile_Menu.slogan_input = pygame_gui.elements.UITextEntryLine(relative_rect=Profile_Menu.slogan_input, manager=manager)
 
-        Profile_Menu.resize()
-
         Profile_Menu.hide_input()
 
-    @staticmethod
-    def resize():
         Profile_Menu.nickname_input.set_dimensions((Media.profile_menu_metrics["nickname_input"]["w"], Media.profile_menu_metrics["nickname_input"]["h"]))  # Cambiar tamaño
         Profile_Menu.nickname_input.set_position((Media.profile_menu_metrics["nickname_input"]["x"], Media.profile_menu_metrics["nickname_input"]["y"]))   # Cambiar posición
         Profile_Menu.slogan_input.set_dimensions((Media.profile_menu_metrics["slogan_input"]["w"], Media.profile_menu_metrics["slogan_input"]["h"]))  # Cambiar tamaño
@@ -717,6 +728,28 @@ class Profile_Menu:
         Game.screen.blit(Media.sized["seleccionar_foto_btn"], (Media.metrics["seleccionar_foto_btn"]["x"], Media.metrics["seleccionar_foto_btn"]["y"]))
         Game.screen.blit(Media.sized["guardar_apodo_btn"], (Media.metrics["guardar_apodo_btn"]["x"], Media.metrics["guardar_apodo_btn"]["y"]))
         Game.screen.blit(Media.sized["guardar_lema_btn"], (Media.metrics["guardar_lema_btn"]["x"], Media.metrics["guardar_lema_btn"]["y"]))
+
+
+class End_Game_Menu:
+
+    def __init__(self) -> None:
+        End_Game_Menu.winner_text = ""
+        End_Game_Menu.resize()
+
+    @staticmethod
+    def draw():
+        Game.screen.blit(Media.sized["end_ui"], (Media.metrics["end_ui"]["x"], Media.metrics["end_ui"]["y"]))
+
+        Game.screen.blit(Media.sized["volver_btn"], (Media.metrics["volver_btn"]["x"], Media.metrics["volver_btn"]["y"]))
+        Game.screen.blit(Media.sized["revancha_btn"], (Media.metrics["revancha_btn"]["x"], Media.metrics["revancha_btn"]["y"]))
+
+        Game.screen.blit(End_Game_Menu.winner_text, (Game.height//2, Media.metrics["name_bar"]["y"]))
+
+    @staticmethod
+    def resize(winner=""):  # this is alose used as set winner function
+        if winner != "":
+            End_Game_Menu.winner_text = winner  # this variable is used because the user may want to resize the window while the game is running, so the text should re-render with the same winner as before even if the winner isnt passed as an argument
+        End_Game_Menu.winner_text = Fonts.nickname_name_bar.render(End_Game_Menu.winner_text, True, Game.DARK_GREY)
 
 
 class Name_Bar:
@@ -997,7 +1030,7 @@ class Slider_Menu:
     def __init__(self):
 
         self.sliders = [
-            Slider(Media.slider_metrics, (250, 20), 0.4, 0, 1)  # ,
+            Slider(Media.slider_metrics["pos"], Media.slider_metrics["size"], 0.4, 0, 1)  # ,
         ]
 
     def run(self, show_music):
@@ -1005,7 +1038,9 @@ class Slider_Menu:
         mouse = pygame.mouse.get_pressed()
 
         if show_music:
+
             Game.screen.blit(Media.sized["music_btn"], (Media.metrics["music_btn"]["x"], Media.metrics["music_btn"]["y"]))
+
             for slider in self.sliders:
                 if slider.container_rect.collidepoint(mouse_pos):
                     if mouse[0]:

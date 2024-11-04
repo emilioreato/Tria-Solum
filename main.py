@@ -66,6 +66,7 @@ active_uis = {
     "chat": False,
     "donations": False,
     "profile": False,
+    "end": False,
 }
 
 players_info = {
@@ -91,7 +92,12 @@ pieces_have_been_chosen = False
 
 current_turn = None
 
-online_set_up_done = False
+global start_end_game_transition
+start_end_game_transition = False
+global transition_timer
+transition_timer = False
+
+# online_set_up_done = False
 global port_opened
 port_opened = False
 
@@ -133,7 +139,7 @@ for card_type, cards in inventory.cards.items():
 
 def setup():
 
-    global piece_selection_menu, name_bar, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, end_menu, name_bar, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -154,6 +160,7 @@ def setup():
     warning_manager = clases.Warning()
     donations_menu = clases.Donation_Menu()
     name_bar = clases.Name_Bar()
+    end_menu = clases.End_Game_Menu()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -287,6 +294,11 @@ def receive_messages():  # This function receives messages from the server while
                     for piece in active_pieces:
                         if piece.id == args[1]:
                             active_pieces.remove(piece)
+
+                    if check_win()[0]:  # in case 0 pieces are left, we win
+                        global start_end_game_transition
+                        start_end_game_transition = True
+
                     global selected_piece
                     selected_piece = None
 
@@ -296,7 +308,7 @@ def receive_messages():  # This function receives messages from the server while
                 case "exit":
                     print("the enemy has abandoned the game")
 
-                case "setup":
+                case "setup":  # this is only planned to be received by the client. the server sends it the info and then the clint replies with its own info
                     # gets the info the server sent
                     global enemy_team, my_team, current_turn
                     enemy_team = args[1]
@@ -339,6 +351,12 @@ def receive_messages():  # This function receives messages from the server while
 
 def match_set_up():
 
+    # restarting all the variables for a new game
+    global my_pieces, reference_pieces, active_pieces
+    my_pieces = []
+    reference_pieces = []
+    active_pieces = []
+
     if (play_online):
 
         if sckt.mode == "server":
@@ -369,7 +387,10 @@ def match_set_up():
 
     active_uis["join_match_ready"] = False  # after the turns have been assigned then we want to go into the piece selection menu
     active_uis["match_creation_ready"] = False
+    active_uis["end"] = False
+
     active_uis["piece_selection"] = True
+
     clases.MatchCreation.show_ingresar_btn = False
     clases.ClockAnimation.set_animation_status(False)
 
@@ -455,6 +476,24 @@ def change_turn(send=False):  # changes the current turn from blue to red or red
     if play_online and send:
         sckt.send("turn")
     print(f"Turno del equipo {current_turn}")  # Mensaje para depuración
+
+
+def check_win():  # checks if some team has won and in that case it returns true and the winning team
+
+    red = blue = 0
+
+    for piece in active_pieces:
+        if piece.team == "blue":
+            blue += 1
+        else:
+            red += 1
+
+    if red == 0:
+        return True, "blue"
+    elif blue == 0:
+        return True, "red"
+
+    return False, "none"
 
 
 def collidepoint_with_sound(rect, point_pos):  # a modified version of collidepoint() so it plays the click sfx sound when its true. used for btns
@@ -551,6 +590,9 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
 
     if active_uis["ingame"]:
         draw_ingame()
+
+    elif active_uis["end"]:
+        end_menu.draw()
 
     elif active_uis["lobby"]:
         lobby.draw()
@@ -671,6 +713,25 @@ while True:
     # if (ite0 == 400 and active_uis["ingame"]):
     # print("wow", len(active_pieces))
 
+    if start_end_game_transition:  # this is used when the matches ends and there is a transition between the finished ingame and the menu
+
+        if transition_timer == False:
+
+            for song in sound_player.UI_SONGS:  # plays and specefically selects the song that should be played in the lobby
+                if "12" in song:
+                    sound_player.play(song)
+                    break
+            # sound_player.play(sound_player.UI_SONGS[11])
+
+            animation_start_time = time.time()
+            transition_timer = True
+
+        if time.time() - animation_start_time > 2:
+            active_uis["ingame"] = False
+            active_uis["end"] = True
+            transition_timer = False
+            start_end_game_transition = False
+
     if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
         if not music_pause_state:  # you also have to check if the music is not paused
             ite0 = 0
@@ -752,6 +813,9 @@ while True:
                                 selected_piece = None
                             active_pieces.remove(piece)
 
+                            if check_win()[0]:
+                                start_end_game_transition = True
+
                 if active_uis["ingame"]:
                     if my_team == current_turn or not play_online:
                         if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
@@ -818,6 +882,13 @@ while True:
                     else:
                         clases.Warning.warn("Lema inválido", "El lema debe tener entre 3 y 30 caracteres y no poseer símbolos extraños.", 8)
 
+                elif check_ui_allowance(Media.rects["revancha_btn"]) and collidepoint_with_sound(Media.rects["revancha_btn"]["rect"], event.pos):
+                    # here you have to make it wait for the opponent to accept the rematch
+
+                    clases.ClockAnimation.set_animation_status(True, "end")
+
+                    threading.Thread(target=match_set_up, daemon=True).start()
+
                 elif check_ui_allowance(Media.useful_rects["send_btn_chat"]) and collidepoint_with_sound(Media.useful_rects["send_btn_chat"]["rect"], event.pos):  # if the send btn was clicked
 
                     collect_msg_and_send_it()
@@ -849,12 +920,20 @@ while True:
                     Fonts.resize_fonts()
                     clases.Piece.resize(active_pieces)
 
+                    join_match.resize(manager)
+                    if active_uis["join_match"]:
+                        join_match.show_input()
+
                     chat_menu.resize(manager)
                     if not active_uis["chat"]:
                         chat_menu.hide_input()
 
-                    join_match.resize()
-                    profile_menu.resize()
+                    profile_menu.resize(manager)
+                    if active_uis["profile"]:
+                        profile_menu.show_input()
+
+                    slider_menu = clases.Slider_Menu()
+
                     name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
                     turn_btn.resize()
                     mini_flag.resize()
@@ -954,6 +1033,10 @@ while True:
                         active_uis["configuration"] = True
                         active_uis["donations"] = False
 
+                    elif active_uis["end"]:
+                        active_uis["end"] = False
+                        active_uis["lobby"] = True
+
                     clases.ClockAnimation.set_animation_status(False)
 
                 if active_uis["piece_selection"]:
@@ -1027,6 +1110,7 @@ while True:
                                 while True:  # waits for the other player to catchup
                                     time.sleep(0.05)
                                     if pieces_have_been_chosen:
+                                        pieces_have_been_chosen = False  # reset the variable for later new matches
                                         active_uis["piece_selection"] = False
                                         name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
                                         break
