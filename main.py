@@ -97,13 +97,17 @@ start_end_game_transition = False
 global transition_timer
 transition_timer = False
 
-# online_set_up_done = False
+global sckt_set_up
+sckt_set_up = False
 global port_opened
 port_opened = False
 
 global just_clicked
 just_clicked = False
 just_clicked_smth = False
+
+global accepted_revenge
+accepted_revenge = False
 
 global typing
 typing = False
@@ -189,14 +193,16 @@ def set_up_ports_and_firewall(check_again=False):
 
 def set_up_online(mode):  # this function sets up the server and client objects as adecuate, opens the needed port, checks firewall instalation status and also connects both users though a socket connection
 
+    global conection_state, sckt_set_up, port_opened
+
     if not port_opened:
         set_up_ports_and_firewall()
 
-    global conection_state
-
     if mode == "client":
-        global sckt
-        sckt = online_tools.Client()
+
+        if not sckt_set_up:  # only if its the first time being executed it set ups the sckt
+            global sckt
+            sckt = online_tools.Client()
 
         clases.ClockAnimation.set_animation_status(False)
 
@@ -214,8 +220,10 @@ def set_up_online(mode):  # this function sets up the server and client objects 
         conection_state = True
 
     elif mode == "server":
-        sckt = online_tools.Server()
-        sckt.set_up_server(port)
+
+        if not sckt_set_up:
+            sckt = online_tools.Server()
+            sckt.set_up_server(port)
 
         online_tools.Online.public_ip = online_tools.Online.get_public_ip()
         clases.MatchCreation.render_ip_text()
@@ -227,6 +235,8 @@ def set_up_online(mode):  # this function sets up the server and client objects 
 
         sckt.server_wait_for_connection()
         conection_state = True
+
+    sckt_set_up = True
 
 
 def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
@@ -326,9 +336,16 @@ def receive_messages():  # This function receives messages from the server while
                     slogan = players_info["me"]["slogan"]
                     slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
 
+                    global accepted_revenge
+                    while not accepted_revenge and active_uis["end"]:
+                        print("Fffff")
+                        time.sleep(0.05)
+                    accepted_revenge = False
+
                     sckt.send("ready-"+players_info["me"]["nickname"]+"-"+slogan)
 
-                case "ready":
+                case "ready":  # this is received by both, server and client
+
                     global match_configured
                     match_configured = True
 
@@ -352,7 +369,7 @@ def receive_messages():  # This function receives messages from the server while
 def match_set_up():
 
     # restarting all the variables for a new game
-    global my_pieces, reference_pieces, active_pieces
+    global my_pieces, reference_pieces, active_pieces, match_configured
     my_pieces = []
     reference_pieces = []
     active_pieces = []
@@ -732,6 +749,12 @@ while True:
             transition_timer = False
             start_end_game_transition = False
 
+            if check_win()[1] == my_team:
+                text = f"You have won! {my_team} pieces dominated the board!"
+            else:
+                text = f"{players_info['enemy']['nickname']} is the winner! Good luck next time..."
+            end_menu.resize(text)
+
     if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
         if not music_pause_state:  # you also have to check if the music is not paused
             ite0 = 0
@@ -886,6 +909,10 @@ while True:
                     # here you have to make it wait for the opponent to accept the rematch
 
                     clases.ClockAnimation.set_animation_status(True, "end")
+
+                    match_configured = False
+
+                    accepted_revenge = True
 
                     threading.Thread(target=match_set_up, daemon=True).start()
 

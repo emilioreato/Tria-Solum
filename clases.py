@@ -743,7 +743,9 @@ class End_Game_Menu:
         Game.screen.blit(Media.sized["volver_btn"], (Media.metrics["volver_btn"]["x"], Media.metrics["volver_btn"]["y"]))
         Game.screen.blit(Media.sized["revancha_btn"], (Media.metrics["revancha_btn"]["x"], Media.metrics["revancha_btn"]["y"]))
 
-        Game.screen.blit(End_Game_Menu.winner_text, (Game.height//2, Media.metrics["name_bar"]["y"]))
+        Game.screen.blit(End_Game_Menu.winner_text, (Game.width//2, Game.height//2))
+
+        ClockAnimation.draw()
 
     @staticmethod
     def resize(winner=""):  # this is alose used as set winner function
