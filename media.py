@@ -50,7 +50,7 @@ class Media:
 
             "turn_btn": pygame.image.load("resources\\images\\menu\\turn_btn.png").convert_alpha(),
 
-            "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert(),
+            "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert_alpha(),
             "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
             "piece_selection_ui": pygame.image.load("resources\\images\\menu\\piece_selection_menu.png").convert(),
             "donations_ui": pygame.image.load("resources\\images\\menu\\donations_ui.png").convert(),

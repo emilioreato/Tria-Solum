@@ -1,3 +1,3 @@
-pfp: resources\images\indicator.png 
+pfp: C:/Users/Emilius/Pictures/Camera Roll/playground-image-F_q0x.png
 nickname: Tú
 slogan: Clan anónimo

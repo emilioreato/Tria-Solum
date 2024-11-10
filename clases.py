@@ -712,13 +712,13 @@ class Profile_Menu:
         Profile_Menu.slogan_input.show()
 
     @staticmethod
-    def hide_input():
+    def hide_input(def_text_nick="Ingrese un apodo", def_text_slog="Ingrese un lema"):
         Profile_Menu.nickname_input.hide()
-        Profile_Menu.nickname_input.set_text("Ingrese un apodo")
+        Profile_Menu.nickname_input.set_text(Game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"))
         # Profile_Menu.nickname_input_focused = False
 
         Profile_Menu.slogan_input.hide()
-        Profile_Menu.slogan_input.set_text("Ingrese un lema")
+        Profile_Menu.slogan_input.set_text(Game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"))
         # Profile_Menu.slogan_input_focused = False
 
     @staticmethod
@@ -760,14 +760,16 @@ class Name_Bar:
         Name_Bar.resize()
 
     @staticmethod
-    def draw():
+    def draw(enemy_pfp=Game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")):
+
+        Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))  # +Game.height/60
 
         Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
         Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
         Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
 
     @staticmethod
-    def resize(nickname="Enemy", slogan="Unknown clan."):
+    def resize(nickname="Enemigo", slogan="Clan desconocido."):
         Name_Bar.nickname_text = Fonts.nickname_name_bar.render(nickname, True, Game.DARK_GREY)
         Name_Bar.slogan_text = Fonts.slogan_name_bar.render(slogan, True, Game.DARK_GREY)
 

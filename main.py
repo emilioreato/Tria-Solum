@@ -15,7 +15,7 @@ install_libraries()  # noqa
 
 import sys
 import time
-import numpy
+import numpy as np
 import ctypes
 import math
 import random
@@ -72,10 +72,11 @@ active_uis = {
 players_info = {
     "me": {"nickname": game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"),
            "slogan": game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"),
-           "profile_picture": "default", },
+           "profile_picture": game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"), },
     "enemy": {"nickname": "Enemigo",
               "slogan": "",
-              "profile_picture": "default", },
+              "profile_picture": "default",
+              "profile_picture_img": "", },
 }
 
 
@@ -101,6 +102,8 @@ global sckt_set_up
 sckt_set_up = False
 global port_opened
 port_opened = False
+global ready_to_receive
+ready_to_receive = False
 
 global just_clicked
 just_clicked = False
@@ -240,6 +243,9 @@ def set_up_online(mode):  # this function sets up the server and client objects 
 
 
 def receive_messages():  # This function receives messages from the server while being executed in a thread so it doesnt block the main loop. The messages are in the following format: action-arguments(n). Note that the - (hyphen is a separation marker)
+
+    global match_configured
+
     while True:  # infinite loop while the program is executed
 
         entry = sckt.recieve()  # reads the message(s) from the buffer and stores them
@@ -318,7 +324,24 @@ def receive_messages():  # This function receives messages from the server while
                 case "exit":
                     print("the enemy has abandoned the game")
 
-                case "setup":  # this is only planned to be received by the client. the server sends it the info and then the clint replies with its own info
+                case "image":
+
+                    sckt.send("ready_to_receive_image")
+                    # print("sended ready_to_receive_image")
+
+                    img = receive_image(sckt, args[1])  # in args 1 comes the size of the image
+
+                    new_img = opencv_to_pygame(img, (game.height/11, game.height/11))
+
+                    players_info["enemy"]["profile_picture_img"] = new_img
+                    # print("img saved")
+
+                case "ready_to_receive_image":
+                    # print("changing value")
+                    global ready_to_receive
+                    ready_to_receive = True
+
+                case "setup_client":  # this is only planned to be received by the client. the server sends it the info and then the clint replies with its own info
                     # gets the info the server sent
                     global enemy_team, my_team, current_turn
                     enemy_team = args[1]
@@ -332,22 +355,31 @@ def receive_messages():  # This function receives messages from the server while
 
                     players_info["enemy"]["slogan"] = args[5]
 
-                    # sending its own info to the client
+                case "set_me_up":  # this is received by the client
+                    # sending its own info to the server
                     slogan = players_info["me"]["slogan"]
                     slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
 
                     global accepted_revenge
                     while not accepted_revenge and active_uis["end"]:
-                        print("Fffff")
+                        # print("Fffff")
                         time.sleep(0.05)
                     accepted_revenge = False
 
                     sckt.send("ready-"+players_info["me"]["nickname"]+"-"+slogan)
 
-                case "ready":  # this is received by both, server and client
+                    time.sleep(0.15)
 
-                    global match_configured
-                    match_configured = True
+                    pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
+                    pfp_bytes = process_image(pfp_path)
+                    send_image(sckt, pfp_bytes)
+
+                    time.sleep(0.3)
+
+                    sckt.send("me_client_has_sent_eveything")
+                    # print("sendddddding me_client_has_send_eveything")
+
+                case "ready":  # this is received by both, server and client
 
                     if sckt.mode == "server":  # the server receives the info from the client
 
@@ -357,6 +389,12 @@ def receive_messages():  # This function receives messages from the server while
                             players_info["enemy"]["nickname"] = "Enemigo"
 
                         players_info["enemy"]["slogan"] = args[2]
+
+                    else:
+                        match_configured = True
+
+                case "me_client_has_sent_eveything":  # this is received by the server
+                    match_configured = True
 
                 case "pieces_have_been_chosen":  # case used to know when the enemy has chosen his pieces and get into the ingame
                     global pieces_have_been_chosen
@@ -392,7 +430,19 @@ def match_set_up():
             slogan = players_info["me"]["slogan"]
             slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
 
-            sckt.send("setup-"+my_team+"-"+enemy_team+"-"+current_turn+"-"+players_info["me"]["nickname"]+"-"+slogan)
+            sckt.send("setup_client-"+my_team+"-"+enemy_team+"-"+current_turn+"-"+players_info["me"]["nickname"]+"-"+slogan)
+
+            time.sleep(0.15)
+
+            pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
+            pfp_bytes = process_image(pfp_path)
+            send_image(sckt, pfp_bytes)  # sending our profile picture to the client (opponent)"""
+
+            # print("image sended")
+            time.sleep(0.3)
+
+            sckt.send("set_me_up")
+            # print("set_me_uprrrrrrrrrrrrrrrrr")
 
     while True:
         time.sleep(0.05)
@@ -410,6 +460,134 @@ def match_set_up():
 
     clases.MatchCreation.show_ingresar_btn = False
     clases.ClockAnimation.set_animation_status(False)
+
+
+def process_image(file_path):
+    # Cargar la imagen en formato BGR
+    image = cv2.imread(file_path)
+
+    # Redimensionar la imagen a 128x128
+    image = cv2.resize(image, (128, 128))
+
+    # Codificar la imagen a formato PNG y obtener los bytes
+    _, image_bytes = cv2.imencode('.png', image)
+
+    # Convertir a bytes
+    return image_bytes.tobytes()
+
+
+def send_image(scktt, image_bytes):
+
+    image_size = len(image_bytes)
+
+    scktt.send("image-"+str(image_size))
+
+    time.sleep(0.15)
+
+    # print("waiting")
+
+    if scktt.mode == "server":
+        global ready_to_receive
+        while not ready_to_receive:
+            time.sleep(0.05)  # wait for the client to be ready to receive the image
+        ready_to_receive = False
+    else:
+        sckt.recieve()
+
+    time.sleep(0.15)
+
+    print(f"about to send {len(image_bytes) / 1024} fragments")
+
+    for byte in range(0, len(image_bytes), 1024):
+        print("sending fragment")
+        end = byte + 1024
+
+        if end > len(image_bytes):  # Si el índice final excede el tamaño de la imagen
+            end = len(image_bytes)  # Ajustamos el final al tamaño de la imagen
+
+        scktt.send_not_encoded(image_bytes[byte:end])
+
+    scktt.send_not_encoded(b"")  # Enviar el delimitador al final
+
+
+def receive_image(scktt, image_size):
+
+    # image_size = int(scktt.recieve())   # Recibir el tamaño de la imagen
+
+    received_image_bytes = b""  # Crear un contenedor para almacenar los bytes recibidos
+
+    while len(received_image_bytes) < int(image_size):
+        print("receiving fragment")
+        # Recibir el fragmento
+        fragment = scktt.recieve_not_encoded()  # Recibir un fragmento de imagen
+        if fragment == "":  # Si es el delimitador vacío, terminamos. esto es en caso de q se haya perdido algun paquete y entonces no quede espetando infinitamente
+            break
+        received_image_bytes += fragment  # Concatenar el fragmento recibido
+
+    # Convertir los bytes recibidos en una imagen de OpenCV
+    nparr = np.frombuffer(received_image_bytes, np.uint8)  # Convertir los bytes en un array de numpy
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decodificar los bytes a imagen
+
+    return img  # Devolver la imagen OpenCV
+
+
+def apply_circular_mask(img):
+    # Obtener el tamaño de la imagen
+    height, width = img.shape[:2]
+
+    # Crear una máscara circular
+    mask = np.zeros((height, width), dtype=np.uint8)
+    cv2.circle(mask, (width // 2, height // 2), min(width, height) // 2, (255), -1)
+
+    # Aplicar la máscara circular a la imagen en formato BGR
+    img_circular = cv2.bitwise_and(img, img, mask=mask)
+
+    # Convertir a BGRA y asignar el canal alfa usando la máscara circular
+    img_rgba = cv2.cvtColor(img_circular, cv2.COLOR_BGR2BGRA)
+    img_rgba[:, :, 3] = mask  # Asignar la máscara al canal alfa para la transparencia
+
+    return img_rgba
+
+
+def opencv_to_pygame(img, new_size=(128, 128)):
+    # Asegurarse de que el tamaño sea una tupla de enteros
+    new_size = (int(new_size[0]), int(new_size[1]))
+
+    # Redimensionar la imagen
+    img = cv2.resize(img, new_size)
+
+    # Aplicar la máscara circular
+    img_circular = apply_circular_mask(img)
+
+    # Convertir la imagen a RGB antes de pasarla a Pygame para evitar cambios de color
+    img_rgb = cv2.cvtColor(img_circular, cv2.COLOR_BGRA2RGBA)
+
+    # Crear la superficie de Pygame desde el buffer con el formato de color correcto
+    img_surface = pygame.image.frombuffer(
+        img_rgb.tobytes(), img_rgb.shape[1::-1], "RGBA"
+    )
+    img_surface = img_surface.convert_alpha()
+
+    # Redimensionar suavemente con smoothscale si es necesario
+    img_surface = pygame.transform.smoothscale(img_surface, new_size)
+
+    return img_surface
+
+
+"""def opencv_to_pygame(img, new_size):
+    # Convertir la imagen de OpenCV (BGR) a RGB
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # Convertir a formato Pygame
+    img_surface = pygame.surfarray.make_surface(img_rgb)
+
+    # Convertir para soportar canal alfa (transparencia)
+    img_surface = img_surface.convert_alpha()
+
+    # Redimensionar la imagen con suavizado (smoothscale)
+    img_surface = pygame.transform.smoothscale(img_surface, new_size)
+
+    return img_surface"""
 
 
 def play_intro_video():
@@ -595,7 +773,7 @@ def draw_ingame():
         else:
             enemy_count += 1
 
-    name_bar.draw()
+    name_bar.draw(players_info["enemy"]["profile_picture_img"])
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
@@ -750,9 +928,9 @@ while True:
             start_end_game_transition = False
 
             if check_win()[1] == my_team:
-                text = f"You have won! {my_team} pieces dominated the board!"
+                text = f"Has ganado! las piezas {my_team} han dominado el tablero!"
             else:
-                text = f"{players_info['enemy']['nickname']} is the winner! Good luck next time..."
+                text = f"{players_info['enemy']['nickname']} es el ganador! Suerte la próxima..."
             end_menu.resize(text)
 
     if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music

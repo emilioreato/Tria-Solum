@@ -42,10 +42,16 @@ class Server(Online):  # a class that contains all the functions and utilities t
 
     def send(self, message, delimiter=";"):  # ; is a delimiter so that it can separete different messages
         self.manager.send((message+delimiter).encode('utf-8'))  # sending utf-8 encoded messages
-        print((message+delimiter))
+        # print((message+delimiter))
+
+    def send_not_encoded(self, info_to_send):  # ; is a delimiter so that it can separete different messages
+        self.manager.send(info_to_send)  # sending utf-8 encoded messages
 
     def recieve(self):
         return self.manager.recv(1024).decode("utf-8")  # getting utf-8 encoded messages that were sent to us
+
+    def recieve_not_encoded(self):
+        return self.manager.recv(1024)
 
     def close(self):  # i think this can only be used by the server side
         self.manager.close()
@@ -70,10 +76,16 @@ class Client(Online):
 
     def send(self, message, delimiter=";"):  # ; is a delimiter so that it can separete different messages
         self.socket.send((message+delimiter).encode('utf-8'))  # sending utf-8 encoded messages
-        print((message+delimiter))
+        # print((message+delimiter))
+
+    def send_not_encoded(self, info_to_send):  # ; is a delimiter so that it can separete different messages
+        self.socket.send(info_to_send)  # sending utf-8 encoded messages
 
     def recieve(self):
         return self.socket.recv(1024).decode("utf-8")  # getting utf-8 encoded messages that were sent to us
+
+    def recieve_not_encoded(self):
+        return self.socket.recv(1024)
 
     def set_up_client(self, HOST_IP, PORT):  # port is tipically 8050. ip has to be the public ip from the user creating the match(working as server)
 
