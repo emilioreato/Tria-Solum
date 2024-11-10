@@ -762,7 +762,17 @@ class Name_Bar:
     @staticmethod
     def draw(enemy_pfp=Game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")):
 
-        Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))  # +Game.height/60
+        # YOUR BAR
+
+        # Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"]+Game.height/100, Media.metrics["name_bar"]["y"]))  # +Game.height/60
+
+        # Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
+        # Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
+        # Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
+
+        # ENEMY BAR
+
+        Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"]+Game.height/100, Media.metrics["name_bar"]["y"]))  # +Game.height/60
 
         Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
         Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
