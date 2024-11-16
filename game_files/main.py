@@ -49,8 +49,6 @@ game.set_up_window(1.35)
 #
 #
 
-
-play_online = True
 # my_team = "blue"
 
 active_uis = {
@@ -73,12 +71,10 @@ players_info = {
     "me": {"nickname": game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"),
            "slogan": game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"),
            "profile_picture": game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"),
-           "profile_picture_img": "",
            },
     "enemy": {"nickname": "Enemigo",
               "slogan": "",
               "profile_picture": "default",
-              "profile_picture_img": "",
               },
 }
 
@@ -92,9 +88,12 @@ conection_state = False
 selected_piece = None
 
 match_configured = False  # variables related to the state of te communication at the start of the match
-pieces_have_been_chosen = False
+# pieces_have_been_chosen = False
 
 current_turn = None
+
+global fps_checking_rate
+fps_checking_rate = 1
 
 global start_end_game_transition
 start_end_game_transition = False
@@ -119,7 +118,7 @@ global typing
 typing = False
 
 follow_mouse = False
-shrink_state = False
+maximize_state = False
 
 selected_background = 0
 
@@ -215,8 +214,8 @@ def set_up_online(mode):  # this function sets up the server and client objects 
         clases.ClockAnimation.set_animation_status(False)
 
         entered_text = join_match.input_texto.get_text()
-        if play_online:
-            sckt.set_up_client(entered_text.strip(), port)
+
+        sckt.set_up_client(entered_text.strip(), port)
         print(f"Texto ingresado: {entered_text}")
 
         clases.JoinMatch.show_ingresar_btn = True
@@ -290,8 +289,7 @@ def receive_messages():  # This function receives messages from the server while
                     sound_player.play_sfx(sound_player.SFX[1])
 
                 case "turn_n_clk_update":
-                    print("reeeeeeeeeeeeeeeeeecibidodoooo el cambio de turnnnn")
-                    print(args[1], args[2])
+                    print("recibido el cambio de turno", args[1], args[2])
                     change_turn_n_timer(False, (float(args[1]), float(args[2])))
 
                 case "latencyerror":
@@ -346,10 +344,9 @@ def receive_messages():  # This function receives messages from the server while
 
                     img = receive_image_bytes(sckt, args[1])  # in args 1 comes the size of the image
 
-                    new_img = Media.opencv_to_pygame(img, (game.height/11.65, game.height/11.65))
+                    Media.pfp["enemy_original"] = img  # saving the enemy pfp without processing
 
-                    players_info["enemy"]["profile_picture_img"] = new_img
-                    # print("img saved")
+                    Media.pfp["enemy"] = Media.opencv_to_pygame(img, (game.height/11.65, game.height/11.65))  # saving the sized enemy pfp
 
                 case "ready_to_receive_image":
                     # print("changing value")
@@ -377,7 +374,6 @@ def receive_messages():  # This function receives messages from the server while
 
                     global accepted_revenge
                     while not accepted_revenge and active_uis["end"]:
-                        # print("Fffff")
                         time.sleep(0.05)
                     accepted_revenge = False
 
@@ -385,9 +381,10 @@ def receive_messages():  # This function receives messages from the server while
 
                     time.sleep(0.15)
 
-                    pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
-                    pfp_bytes = Media.process_image(pfp_path)
-                    send_image(sckt, pfp_bytes)
+                    # pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
+                    # pfp_bytes = Media.process_image(pfp_path)
+
+                    send_image(sckt, Media.pfp["me_processed"])
 
                     time.sleep(0.3)
 
@@ -412,8 +409,22 @@ def receive_messages():  # This function receives messages from the server while
                     match_configured = True
 
                 case "pieces_have_been_chosen":  # case used to know when the enemy has chosen his pieces and get into the ingame
-                    global pieces_have_been_chosen
-                    pieces_have_been_chosen = True
+                    # global pieces_have_been_chosen
+                    # pieces_have_been_chosen = True
+
+                    while active_uis["piece_selection"]:
+                        time.sleep(0.05)
+
+                    my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
+
+                    for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
+                        sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
+
+                    my_pieces = {}  # clear pieces list
+                    active_uis["ingame"] = True  # start the game
+
+                    timer.set_timers(300, "all", measure=True)  # start the timers
+                    timer.update_texts()
 
                 case _:
                     print("unknown command:", args[0])
@@ -427,37 +438,35 @@ def match_set_up():
     reference_pieces = []
     active_pieces = []
 
-    if (play_online):
+    if sckt.mode == "server":
 
-        if sckt.mode == "server":
+        global enemy_team, my_team, current_turn, nickname, slogan
 
-            global enemy_team, my_team, current_turn, nickname, slogan
+        my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
 
-            my_team = random.choice(["blue", "red"])  # randomly chooses the team of the player
+        if my_team == "blue":  # a quick definition of the enemy team
+            enemy_team = "red"
+        else:
+            enemy_team = "blue"
 
-            if my_team == "blue":  # a quick definition of the enemy team
-                enemy_team = "red"
-            else:
-                enemy_team = "blue"
+        current_turn = random.choice(["blue", "red"])  # randomly chooses the team of the player
 
-            current_turn = random.choice(["blue", "red"])  # randomly chooses the team of the player
+        slogan = players_info["me"]["slogan"]
+        slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
 
-            slogan = players_info["me"]["slogan"]
-            slogan.replace("-", "=G?")  # encrypt this so it doesnt corrupt the format of the msg sended
+        sckt.send("setup_client-"+my_team+"-"+enemy_team+"-"+current_turn+"-"+players_info["me"]["nickname"]+"-"+slogan)
 
-            sckt.send("setup_client-"+my_team+"-"+enemy_team+"-"+current_turn+"-"+players_info["me"]["nickname"]+"-"+slogan)
+        time.sleep(0.15)
 
-            time.sleep(0.15)
+        # pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
+        # pfp_bytes = Media.process_image(pfp_path)
+        send_image(sckt, Media.pfp["me_processed"])  # sending our profile picture to the client (opponent)"""
 
-            pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
-            pfp_bytes = Media.process_image(pfp_path)
-            send_image(sckt, pfp_bytes)  # sending our profile picture to the client (opponent)"""
+        # print("image sended")
+        time.sleep(0.3)
 
-            # print("image sended")
-            time.sleep(0.3)
-
-            sckt.send("set_me_up")
-            # print("set_me_uprrrrrrrrrrrrrrrrr")
+        sckt.send("set_me_up")
+        # print("set_me_uprrrrrrrrrrrrrrrrr")
 
     while True:
         time.sleep(0.05)
@@ -521,7 +530,7 @@ def receive_image_bytes(scktt, image_size):
 
     while len(received_image_bytes) < int(image_size):
         print("receiving fragment")
-        # Recibir el fragmento
+
         fragment = scktt.recieve_not_encoded()  # Recibir un fragmento de imagen
         if fragment == "":  # Si es el delimitador vacío, terminamos. esto es en caso de q se haya perdido algun paquete y entonces no quede espetando infinitamente
             break
@@ -575,15 +584,15 @@ def change_turn_n_timer(send=False, args=()):  # changes the current turn from b
 
     if current_turn == my_team:  # this part of the code manages the timer information sending. this is executed everytime any player changes the turn.
 
-        print("this is my_turn niggggggggggg")
+        print("this is the end of my turn. i get its duration")
         info = timer.start_counting_my_turn()   # this returns the seconds my turn lasted and the current time in order
-        print("set_timerssss", info[0])
+        print("set_timers is being executed", info[0])
         timer.set_timers(clases.Timer.my_remaining_time-info[0], "me")
 
     else:
         info2 = timer.update_enemy(args[0], args[1])
         if info2[0]:
-            print("LATENCY ERROR NIGGGH")
+            print("LATENCY ERROR- fixing it")
             sckt.send(f"latencyerror-{info2[1]}")
 
         timer.start_counting_my_turn()
@@ -701,7 +710,7 @@ def draw_ingame():
         else:
             enemy_count += 1
 
-    name_bar.draw(players_info["me"]["profile_picture_img"], players_info["enemy"]["profile_picture_img"])
+    name_bar.draw(Media.pfp["me"], Media.pfp["enemy"])
 
     if timer.update_n_draw(current_turn, my_team):
         loser = timer.who_run_out_of_time(my_team, enemy_team)
@@ -731,7 +740,7 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
         lobby.draw()
 
     elif active_uis["profile"]:
-        profile_menu.draw(players_info["me"]["profile_picture_img"])
+        profile_menu.draw(Media.pfp["me_profile_menu"])
 
     elif active_uis["match_creation"] or active_uis["match_creation_ready"]:
 
@@ -756,11 +765,11 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
         chat_menu.draw()
 
     if active_uis["configuration"]:
-        configuration_menu.draw()
+        configuration_menu.draw(active_uis["ingame"])
         slider_menu.run(show_music=True)
 
     game.screen.blit(Media.sized["x_btn"], (Media.metrics["x_btn"]["x"], Media.metrics["x_btn"]["y"]))  # displaying btns (allways displayed)
-    game.screen.blit(Media.sized["shrink_btn"], (Media.metrics["shrink_btn"]["x"], Media.metrics["shrink_btn"]["y"]))
+    game.screen.blit(Media.sized["maximize_btn"], (Media.metrics["maximize_btn"]["x"], Media.metrics["maximize_btn"]["y"]))
     game.screen.blit(Media.sized["minimize_btn"], (Media.metrics["minimize_btn"]["x"], Media.metrics["minimize_btn"]["y"]))
 
     clases.Warning.draw()
@@ -796,7 +805,7 @@ try:  # we try opening the ports as soon as possible so the user doesnt waste ti
 except:
     pass
 
-start_time = time.time()  # varibles needed to record fps  # Record the starting time
+fps_start_time = time.time()  # varibles needed to record fps  # Record the starting time
 loop_count = 0
 
 pygame.mixer.init()
@@ -811,16 +820,19 @@ if active_uis["intro"]:
     # SETTING SOME THINGS
     setup()
 
-    players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+    # loading the pfp images
+    Media.set_up_pfp_image(game)
 
     # ONCE IT FINISHES LOADING EVERYTHING IT WAITS FOR THE VIDEO TO END
     while active_uis["intro"] == True:
         time.sleep(0.05)
     pygame.mixer.music.set_volume(0.3)
+
 else:
     pygame.mixer.music.set_volume(0.3)
     setup()
-    players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+
+    Media.set_up_pfp_image(game)  # loading the pfp images
 
 
 set_mouse_usage(True, False)
@@ -847,9 +859,6 @@ ite2 = 0
 
 init_time = time.time()  # saves the time when the loop was entered
 while True:
-
-    # if (ite0 == 400 and active_uis["ingame"]):
-    # print("wow", len(active_pieces))
 
     if start_end_game_transition:  # this is used when the matches ends and there is a transition between the finished ingame and the menu
 
@@ -948,14 +957,13 @@ while True:
                                 print("No es tu turno")
 
                         elif current_turn == my_team and selected_piece != None:
-                            if play_online:
-                                sckt.send(f"attacked-{active_pieces[selected_piece].id}-{piece.id}")
+
+                            sckt.send(f"attacked-{active_pieces[selected_piece].id}-{piece.id}")
                             active_pieces[selected_piece].attack(piece)
 
                         if piece.hp <= 0 and selected_piece != None:
 
-                            if play_online:
-                                sckt.send(f"dead-{piece.id}")
+                            sckt.send(f"dead-{piece.id}")
 
                             if piece == active_pieces[selected_piece]:
                                 selected_piece = None
@@ -966,7 +974,7 @@ while True:
 
                 if active_uis["ingame"]:
 
-                    if my_team == current_turn or not play_online:  # if its players turn and the player clicked in the turn button then its changed and notifies the other player
+                    if my_team == current_turn:  # if its players turn and the player clicked in the turn button then its changed and notifies the other player
                         if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
                             change_turn_n_timer(send=True)
 
@@ -1006,7 +1014,7 @@ while True:
                     if selected_file_path.endswith('.png'):  # check if the file is a png
                         game.replace_line_in_txt("user_info\\data.txt", "pfp", f"pfp: {selected_file_path}", mode="write")  # update the value of the profile picture in the data.txt file
                         sound_player.play_sfx(sound_player.SFX[3])
-                        players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+                        Media.set_up_pfp_image(game)
 
                     else:
                         clases.Warning.warn("Imágen inválida", "La imágen debe ser formato PNG y es recomendable que no supere una resolución de 512x512 [1:1].", 8)
@@ -1054,11 +1062,11 @@ while True:
 
                     collect_msg_and_send_it()
 
-                elif collidepoint_with_sound(Media.rects["shrink_btn"]["rect"], event.pos):  # if the shrink btn was clicked resize eveything to the due size
+                elif collidepoint_with_sound(Media.rects["maximize_btn"]["rect"], event.pos):  # if the maximize btn was clicked resize eveything to the due size
 
-                    shrink_state = not shrink_state  # pulsator to conmutator logic
+                    maximize_state = not maximize_state  # pulsator to conmutator logic
 
-                    if shrink_state:
+                    if maximize_state:
 
                         window.moveTo(game.width//6, game.height//7)  # move the window
                         game.set_up_window(1.4)
@@ -1100,6 +1108,9 @@ while True:
                     turn_history.resize()
                     mini_flag.resize()
 
+                    Media.set_up_pfp_image(game)  # resizing the pfps
+                    Media.pfp["enemy"] = Media.opencv_to_pygame(Media.pfp["enemy_original"], (game.height/11.65, game.height/11.65))
+
                     timer.update_texts()
 
                     manager.ui_theme.cursor_blink_time = 0.5
@@ -1133,13 +1144,12 @@ while True:
                             sound_player.play(song)
                             break
 
-                    if (play_online):
-                        threading.Thread(target=set_up_online, args=("server",), daemon=True).start()
+                    threading.Thread(target=set_up_online, args=("server",), daemon=True).start()
 
-                    else:
+                    """else:
                         active_uis["match_creation"] = False
                         active_uis["match_creation_ready"] = True
-                        sound_player.play_sfx(sound_player.SFX[3])
+                        sound_player.play_sfx(sound_player.SFX[3])"""
 
                 elif check_ui_allowance(Media.rects["copy_btn"]) and collidepoint_with_sound(Media.rects["copy_btn"]["rect"], event.pos):
                     pyperclip.copy(online_tools.Online.public_ip)
@@ -1253,7 +1263,7 @@ while True:
                     if not piece.check_for_pieces_in_the_grid_coordinates(active_pieces, gx, gy):  # if there is no piece in the new grid coordinates
                         active_pieces[selected_piece].grid_pos_to_pixels(gx, gy, change_mana=change_mana)  # sets the grid pos to the adecuate one, as well as the pos_x which is the pixel position
 
-                        if active_uis["ingame"] and play_online:  # if we are in the ingame and playing online then send the other user the move info
+                        if active_uis["ingame"]:  # if we are in the ingame and playing online then send the other user the move info
                             sckt.send(f"moved-{active_pieces[selected_piece].id}-{active_pieces[selected_piece].grid_pos_x}-{active_pieces[selected_piece].grid_pos_y}-{change_mana}")
                             # this is the format of the message: moved-[id]-[x]-[y]
 
@@ -1265,28 +1275,15 @@ while True:
 
                         my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
 
-                        if (len(my_pieces) >= 3):
+                        if (len(my_pieces) == 3):
 
-                            if play_online:
-                                msg = "pieces_have_been_chosen"
-                                sckt.send(msg, delimiter="")
+                            msg = "pieces_have_been_chosen"
+                            sckt.send(msg, delimiter="")
 
-                                while True:  # waits for the other player to catchup
-                                    time.sleep(0.05)
-                                    if pieces_have_been_chosen:
-                                        pieces_have_been_chosen = False  # reset the variable for later new matches
-                                        active_uis["piece_selection"] = False
-                                        name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
-                                        break
-
-                                for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
-                                    sckt.send(f"created-{piece.specie}-{piece.grid_pos_x}-{piece.grid_pos_y}-{piece.team}-{piece.hp}-{piece.mana}-{piece.agility}-{piece.defense}-{piece.damage}-{piece.id}")
-
-                            my_pieces = {}  # clear pieces list
                             active_uis["ingame"] = True  # start the game
+                            active_uis["piece_selection"] = False
 
-                            timer.set_timers(300, "all", measure=True)  # start the timers
-                            timer.update_texts()
+                            name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
 
         if event.type == pygame.KEYDOWN:  # if a key was pressed
 
@@ -1344,8 +1341,8 @@ while True:
             if event.ui_element == join_match.boton_conectar:
 
                 if re.search(r"^(\d{1,3}\.){3}\d{1,3}$", join_match.input_texto.get_text()):
-                    if (play_online):
-                        threading.Thread(target=set_up_online, args=("client",), daemon=True).start()
+
+                    threading.Thread(target=set_up_online, args=("client",), daemon=True).start()
                     clases.ClockAnimation.set_animation_status(True, "join_match")
 
                 else:
@@ -1367,15 +1364,25 @@ while True:
 
     draw()  # calling the main draw function
 
+    ####
+
     ite0 += 1  # iterator used to control some events
     ite1 += 1
     ite2 += 1
 
-    # FPS CONTER
+    # FPS COUNTER
+
     loop_count += 1  # Increment the counter on each loop
-    if time.time() - start_time >= 3:
-        print(f"{loop_count/3:.0f}")
+    if time.time() - fps_start_time >= fps_checking_rate:
+        current_fps = int(loop_count/fps_checking_rate)
+        clases.Game.current_fps_render = Fonts.latency.render(f"{current_fps} fps", True, game.MID_GREY)
+        global fps_cheking_rate
+        if current_fps < fps/1.15:  # if current_fps are 15% lower than expected then lets reduce the sampling rate so it boosts performance.
+            fps_checking_rate = 3
+        else:
+            fps_checking_rate = 0.5
+
         loop_count = 0
-        start_time = time.time()
+        fps_start_time = time.time()
 
     game.timer.tick(fps)  # set the fps to the maximun possible

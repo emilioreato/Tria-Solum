@@ -38,6 +38,8 @@ class Game:
     timer = 0
     dev_mode = 0
 
+    current_fps_render = pygame.Surface((width, height))  # empty surface
+
     BACKGROUNDS_AMOUNT = 7
 
     rects_list = []
@@ -703,11 +705,18 @@ class Configuration_Menu:
     slogan_input_focused = False
 
     @staticmethod
-    def draw():
+    def draw(ingame):
 
         Game.screen.blit(Media.sized["configuration_ui"], (Media.metrics["configuration_ui"]["x"], Media.metrics["configuration_ui"]["y"]))
 
-        Game.screen.blit(Media.sized["apoyanos_btn"], (Media.metrics["apoyanos_btn"]["x"], Media.metrics["apoyanos_btn"]["y"]))
+        if not ingame:
+            Game.screen.blit(Media.sized["apoyanos_btn"], (Media.metrics["apoyanos_btn"]["x"], Media.metrics["apoyanos_btn"]["y"]))
+
+        else:
+
+            Game.screen.blit(Timer.latency_render, (Media.metrics["configuration_ui"]["x"]+Game.height/2, Media.metrics["configuration_ui"]["y"]+Game.height/3))  # THIS SHOWS THE LATENCY OF THE CONNECTION
+
+        Game.screen.blit(Game.current_fps_render, (Media.metrics["configuration_ui"]["x"]+Game.height/1.3, Media.metrics["configuration_ui"]["y"]+Game.height/2))  # THIS SHOWS THE FPS
 
 
 class Profile_Menu:
@@ -789,17 +798,8 @@ class Name_Bar:
     def __init__(self) -> None:
         Name_Bar.resize()
 
-    """if enemy_pfp == "" or my_pfp == "":
-
-    img_bytes = Media.process_image("resources\\images\\indicator.png")
-
-    if my_pfp == "":
-        my_pfp = Media.opencv_to_pygame(img_bytes, (Game.height/11, Game.height/11))
-    if enemy_pfp == "":
-        enemy_pfp = Media.opencv_to_pygame(img_bytes, (Game.height/11, Game.height/11))"""
-
     @staticmethod
-    def draw(my_pfp=Game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"), enemy_pfp=""):
+    def draw(my_pfp, enemy_pfp):
 
         pfp_offset = Game.height/160
 
@@ -822,7 +822,7 @@ class Name_Bar:
         Game.screen.blit(Name_Bar.enemy_slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
 
     @staticmethod
-    def resize(my_nickname="Túppp", my_slogan="Clan desconocido.pppp", enemy_nickname="Enemigo", enemy_slogan="Clan desconocido."):
+    def resize(my_nickname="Tú", my_slogan="Clan desconocido", enemy_nickname="Enemigo", enemy_slogan="Clan desconocido."):
         Name_Bar.enemy_nickname_text = Fonts.nickname_name_bar.render(enemy_nickname, True, Game.DARK_GREY)
         Name_Bar.enemy_slogan_text = Fonts.slogan_name_bar.render(enemy_slogan, True, Game.DARK_GREY)
 
@@ -862,8 +862,6 @@ class Chat:
                 return texto
 
         Game.screen.blit(Media.sized["chat_ui"], (Media.metrics["chat_ui"]["x"], Media.metrics["chat_ui"]["y"]))
-
-        Game.screen.blit(Timer.latency_render, (Media.metrics["chat_ui"]["x"]+Game.height/80, Media.metrics["chat_ui"]["y"]+Game.height/80))  # THIS SHOWS THE LATENCY OF THE CONNECTION
 
         # rect4 = pygame.rect.Rect(Media.useful_rects_metrics["send_btn_chat"]["x"], Media.useful_rects_metrics["send_btn_chat"]["y"], Media.useful_rects_metrics["send_btn_chat"]["w"], Media.useful_rects_metrics["send_btn_chat"]["h"])
         # pygame.draw.rect(Game.screen, (255, 255, 125), rect4)

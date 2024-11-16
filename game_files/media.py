@@ -19,6 +19,12 @@ class Media:
         for i in range(0, Media.BACKGROUNDS_AMOUNT):
             Media.bare_backgrounds.append(pygame.image.load(f"resources\\images\\background{i}.png"))  # load some images, converts it for optimization and then scales them.
 
+        Media.pfp = {"me": None,
+                     "me_original": None,
+                     "me_profile_menu": None,
+                     "enemy": None,
+                     "enemy_original": None}
+
         Media.bare_imgs = {
             "red_mage": pygame.image.load("resources\\images\\red_mage.png").convert_alpha(),
             "blue_mage": pygame.image.load("resources\\images\\blue_mage.png").convert_alpha(),
@@ -31,7 +37,7 @@ class Media:
             "cursor_default": pygame.image.load("resources\\icons\\cursor_default.png").convert_alpha(),
             "cursor_hand": pygame.image.load("resources\\icons\\cursor_hand.png").convert_alpha(),
             "x_btn": pygame.image.load("resources\\icons\\x.png").convert_alpha(),
-            "shrink_btn": pygame.image.load("resources\\icons\\shrink.png").convert_alpha(),
+            "maximize_btn": pygame.image.load("resources\\icons\\maximize.png").convert_alpha(),
             "minimize_btn": pygame.image.load("resources\\icons\\minimize.png").convert_alpha(),
             "setting_btn": pygame.image.load("resources\\icons\\setting.png").convert_alpha(),
             "music_btn": pygame.image.load("resources\\icons\\music.png").convert_alpha(),
@@ -111,14 +117,14 @@ class Media:
             "cursor_default": {"w": 30 * 0.805, "h": 30, "make_rect": False},
             "cursor_hand": {"w": 30 * 0.805, "h": 30, "make_rect": False},
             "x_btn": {"x": height//0.58, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
-            "shrink_btn": {"x": height//0.6, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
+            "maximize_btn": {"x": height//0.6, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "minimize_btn": {"x": height//0.62, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": "all"},
             "setting_btn": {"x": height//0.64, "y": height // 40, "w": height // 24, "h": height // 24, "use_rect_in": ("ingame", "match_creation", "join_match", "match_creation_ready", "join_match_ready")},
             "music_btn": {"x": height/1.972, "y": height / 2.351, "w": height / 28, "h": height / 28, "use_rect_in": "configuration"},
             "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": "match_creation_ready"},
             "chat_btn": {"x": height/2, "y": height / 30, "w": height / 24, "h": height / 24, "use_rect_in": "ingame"},
 
-            "name_bar": {"x": height/28, "y": height/30, "w": (height / 10) * (1280/278), "h": height / 10, "make_rect": False},
+            "name_bar": {"x": height/33, "y": height/35, "w": (height / 10) * (1280/278), "h": height / 10, "make_rect": False},
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
             "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
 
@@ -161,9 +167,9 @@ class Media:
             "configuration_btn": {"x": width/2-((height*(1280/222))/32)-height/32, "y":  height/1.7, "w": (height*(1280/222))/32, "h": height/32, "use_rect_in": "lobby"},
         }
 
-        Media.piece_selection_reference_info = [{"x": height/0.64, "y": height / 3, "specie": "mage"},
-                                                {"x": height/0.64, "y": height / 2.25, "specie": "archer"},
-                                                {"x": height/0.64, "y": height / 1.7, "specie": "knight"}]
+        Media.piece_selection_reference_info = [{"x": height/0.646, "y": height / 3.08, "specie": "mage"},
+                                                {"x": height/0.646, "y": height / 2.22, "specie": "archer"},
+                                                {"x": height/0.646, "y": height / 1.706, "specie": "knight"}]
 
         Media.join_match_metrics = {"text_input": {"x": width // 2 - (height/5)/2, "y": height // 2 - 50, "w": height/5, "h": 50},
                                     "btn_conectar": {"x": width // 2 + (height/5)/2, "y": height // 2 - 50, "w": height/50+80, "h": 50},
@@ -245,13 +251,23 @@ class Media:
         return pygame.transform.smoothscale(image, (size_x, size_y))
 
     @staticmethod
-    def process_image(file_path):
+    def set_up_pfp_image(game):
 
-        image = cv2.imread(file_path)  # Cargar la imagen en formato BGR
+        Media.pfp["me_original"] = Media.load_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"))
+        Media.pfp["me_processed"] = Media.process_image(Media.pfp["me_original"])
+        Media.pfp["me"] = Media.opencv_to_pygame(Media.pfp["me_processed"], (game.height/11.65, game.height/11.65))
+        Media.pfp["me_profile_menu"] = Media.opencv_to_pygame(Media.process_image(Media.pfp["me_original"], (256, 256)), (game.height/11.65, game.height/11.65))
+
+    @staticmethod
+    def load_image(file_path):  # a function used to load the images.
+        return cv2.imread(file_path)  # Cargar la imagen en formato BGR
+
+    @staticmethod
+    def process_image(image, res=(128, 128)):  # a function used to process the images. y
 
         image = Media.crop_center_square(image)  # Recortar la imagen en un cuadrado centrado
 
-        image = cv2.resize(image, (128, 128))  # Redimensionar la imagen a 128x128
+        image = cv2.resize(image, res)  # Redimensionar la imagen a 128x128
 
         _, image_bytes = cv2.imencode('.png', image)  # Codificar la imagen a formato PNG y obtener los bytes
 
