@@ -80,7 +80,6 @@ players_info = {
 
 
 my_pieces = []
-reference_pieces = []
 active_pieces = []
 
 conection_state = False
@@ -94,6 +93,9 @@ current_turn = None
 
 global fps_checking_rate
 fps_checking_rate = 1
+
+global i_have_chosen_pieces
+i_have_chosen_pieces = False
 
 global start_end_game_transition
 start_end_game_transition = False
@@ -272,6 +274,7 @@ def receive_messages():  # This function receives messages from the server while
                 args[i] = arg.replace("=G?", "-")  # this lines replaces the =G? with - so it doesnt break the chat and the format. before sending the msg the enemy replace the possible - with =G?. its just encriptation
 
             match args[0]:  # decides what to do based on the action received
+
                 case "attacked":  # id-id2 . thats the format this case expects to receive. id is the identifier of the attacker and id2 is the identifier of the attacked piece
                     for piece in active_pieces:
                         if piece.id == args[1]:
@@ -409,10 +412,10 @@ def receive_messages():  # This function receives messages from the server while
                     match_configured = True
 
                 case "pieces_have_been_chosen":  # case used to know when the enemy has chosen his pieces and get into the ingame
-                    # global pieces_have_been_chosen
-                    # pieces_have_been_chosen = True
 
-                    while active_uis["piece_selection"]:
+                    global i_have_chosen_pieces
+                    while not i_have_chosen_pieces:
+                        print("nigggk")
                         time.sleep(0.05)
 
                     my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
@@ -422,6 +425,8 @@ def receive_messages():  # This function receives messages from the server while
 
                     my_pieces = {}  # clear pieces list
                     active_uis["ingame"] = True  # start the game
+                    active_uis["piece_selection"] = False
+                    i_have_chosen_pieces = False
 
                     timer.set_timers(300, "all", measure=True)  # start the timers
                     timer.update_texts()
@@ -433,9 +438,8 @@ def receive_messages():  # This function receives messages from the server while
 def match_set_up():
 
     # restarting all the variables for a new game
-    global my_pieces, reference_pieces, active_pieces, match_configured
+    global my_pieces, active_pieces, match_configured
     my_pieces = []
-    reference_pieces = []
     active_pieces = []
 
     if sckt.mode == "server":
@@ -476,11 +480,11 @@ def match_set_up():
     if sckt.mode == "server":
         sckt.send("ready")
 
-    active_uis["join_match_ready"] = False  # after the turns have been assigned then we want to go into the piece selection menu
+    active_uis["join_match_ready"] = False
     active_uis["match_creation_ready"] = False
     active_uis["end"] = False
-
-    active_uis["piece_selection"] = True
+    i_have_chosen_pieces = False
+    active_uis["piece_selection"] = True  # after the turns have been assigned then we want to go into the piece selection menu
 
     clases.MatchCreation.show_ingresar_btn = False
     clases.ClockAnimation.set_animation_status(False)
@@ -757,7 +761,7 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
     elif active_uis["donations"]:
         donations_menu.draw()
 
-    if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chosse from and the menu itself which is the background)
+    if active_uis["piece_selection"]:  # what has to be shown when the piece selection menu is active (reference pieces to chose from and the menu itself which is the background)
         draw_ingame()
         piece_selection_menu.draw(my_team)
 
@@ -945,15 +949,15 @@ while True:
 
                 for piece in active_pieces:  # Checks if any piece was clicked
 
-                    if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # Comprobar si el clic está dentro del circulo
+                    if piece.is_clicked(event.pos, (piece.pos_x, piece.pos_y)):  # checks if the piece has been clicked by checking if the mouse position is inside the piece's circle. i_have_chosen_pieces is used to prevent the player from selecting more pieces than allowed
                         print("pieza clickeada")
 
                         if piece.team == my_team:
                             selected_piece = active_pieces.index(piece)
 
-                            if (current_turn == "blue" and active_pieces[selected_piece].team == "blue") or (current_turn == "red" and active_pieces[selected_piece].team == "red"):
+                            if (current_turn == active_pieces[selected_piece].team) or i_have_chosen_pieces:                    # if (current_turn == "blue" and active_pieces[selected_piece].team == "blue") or (current_turn == "red" and active_pieces[selected_piece].team == "red"):
                                 follow_mouse = True
-                            elif (current_turn == "blue" and active_pieces[selected_piece].team == "red") or (current_turn == "red" and active_pieces[selected_piece].team == "blue"):
+                            else:                                               # elif (current_turn == "blue" and active_pieces[selected_piece].team == "red") or (current_turn == "red" and active_pieces[selected_piece].team == "blue"):
                                 print("No es tu turno")
 
                         elif current_turn == my_team and selected_piece != None:
@@ -1146,11 +1150,6 @@ while True:
 
                     threading.Thread(target=set_up_online, args=("server",), daemon=True).start()
 
-                    """else:
-                        active_uis["match_creation"] = False
-                        active_uis["match_creation_ready"] = True
-                        sound_player.play_sfx(sound_player.SFX[3])"""
-
                 elif check_ui_allowance(Media.rects["copy_btn"]) and collidepoint_with_sound(Media.rects["copy_btn"]["rect"], event.pos):
                     pyperclip.copy(online_tools.Online.public_ip)
                     clases.Warning.warn("Clave de partida copiada", "La clave de partida ha sido exitosamente copiada al portapapeles.", 3, sound=False)
@@ -1213,7 +1212,7 @@ while True:
 
                     clases.ClockAnimation.set_animation_status(False)
 
-                if active_uis["piece_selection"]:
+                if active_uis["piece_selection"] and not i_have_chosen_pieces:
                     for i in range(3):  # Checks if any piece was clicked
                         if clases.Piece.is_clicked(event.pos, (Media.piece_selection_reference_info[i]["x"]+(Media.pieces_size*1.5)/2, Media.piece_selection_reference_info[i]["y"]+(Media.pieces_size*1.5)/2), mult=1.5):
 
@@ -1271,19 +1270,20 @@ while True:
                         active_pieces[selected_piece].grid_pos_to_pixels(active_pieces[selected_piece].grid_pos_x, active_pieces[selected_piece].grid_pos_y, change_mana=change_mana)
                     # print(active_pieces[selected_piece].mana)
 
-                    if active_uis["piece_selection"]:
+                    if active_uis["piece_selection"] and not i_have_chosen_pieces:
 
                         my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
 
                         if (len(my_pieces) == 3):
 
-                            msg = "pieces_have_been_chosen"
-                            sckt.send(msg, delimiter="")
+                            sckt.send("pieces_have_been_chosen", delimiter="")
 
-                            active_uis["ingame"] = True  # start the game
-                            active_uis["piece_selection"] = False
+                            # active_uis["ingame"] = True  # start the game
+                            # active_uis["piece_selection"] = False
 
                             name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
+
+                            i_have_chosen_pieces = True
 
         if event.type == pygame.KEYDOWN:  # if a key was pressed
 
