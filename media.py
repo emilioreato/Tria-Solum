@@ -1,4 +1,7 @@
 import pygame
+import numpy as np
+import cv2
+import time
 
 
 class Media:
@@ -35,7 +38,7 @@ class Media:
             "copy_btn": pygame.image.load("resources\\icons\\paperclip_copy.png").convert_alpha(),
             "chat_btn": pygame.image.load("resources\\icons\\chat.png").convert_alpha(),
 
-            "name_bar": pygame.image.load("resources\\images\menu\\name_bar.png").convert_alpha(),
+            "name_bar": pygame.image.load("resources\\images\menu\\name_bar5.png").convert_alpha(),
             "team_bar": pygame.image.load("resources\\images\menu\\my_team_bar2.png").convert_alpha(),
             "enemy_bar": pygame.image.load("resources\\images\menu\\enemy_bar3.png").convert_alpha(),
 
@@ -48,7 +51,9 @@ class Media:
             "mini_flag_blue": pygame.image.load("resources\\images\\flag_blue.png").convert_alpha(),
             "mini_flag_red": pygame.image.load("resources\\images\\flag_red.png").convert_alpha(),
 
-            "turn_btn": pygame.image.load("resources\\images\\menu\\turn_btn.png").convert_alpha(),
+            "turn_btn": pygame.image.load("resources\\images\\menu\\turn_btn4.png").convert_alpha(),
+            "turn_next_btn": pygame.image.load("resources\\images\\menu\\turn_next.png").convert_alpha(),
+            "turn_prev_btn": pygame.image.load("resources\\images\\menu\\turn_prev.png").convert_alpha(),
 
             "chat_ui": pygame.image.load("resources\\images\\menu\\chat.png").convert_alpha(),
             "configuration_ui": pygame.image.load("resources\\images\\menu\\configuracion_ui.png").convert(),
@@ -89,6 +94,9 @@ class Media:
             "chat_msg_font": height//52,  # height//44,
             "warning_title_font": height//38,  # height//30,
             "warning_message_font": height//44,  # height//44,
+            "timer": height//22,  # height//34,
+            "latency": height//60,  # height//34,
+
         }
 
         Media.metrics = {  # DONT MAKE A KEY "MAKE_RECT" TRUE BECAUSE IT WONT MATTER, IT WONT MAKE THE RECTANGLE ANYWAY. later in the code the rectangles are created when in the keys there is the keyword "make_rect" so if you dont want the rect, just doesnt even speficy it
@@ -110,7 +118,7 @@ class Media:
             "copy_btn": {"x": height/1, "y": height / 2.05, "w": height*(225/256) / 28, "h": height / 28, "use_rect_in": "match_creation_ready"},
             "chat_btn": {"x": height/2, "y": height / 30, "w": height / 24, "h": height / 24, "use_rect_in": "ingame"},
 
-            "name_bar": {"x": height/24, "y": height/24, "w": (height / 10) * (1280/278), "h": height / 10, "make_rect": False},
+            "name_bar": {"x": height/28, "y": height/30, "w": (height / 10) * (1280/278), "h": height / 10, "make_rect": False},
             "team_bar": {"x": 0, "y": 0, "w": (height / 10) * (1280/528), "h": height / 10, "make_rect": False},
             "enemy_bar": {"x": 0, "y": 0, "w": (height / 12) * (1280/391), "h": height / 12, "make_rect": False},
 
@@ -124,6 +132,9 @@ class Media:
             "mini_flag_red": {"x": height/0.905, "y": height / 1.137, "w": height / 14, "h": height / 14, "make_rect": False},
 
             "turn_btn": {"x": height/1, "y": height / 1.4, "w": height / (5/1.512), "h": height / 5, "make_rect": False},
+            "turn_next_btn": {"x": height/2.11, "y": height / 1.4, "w": height / (5/1.512), "h": height / 5, "make_rect": False},
+            "turn_prev_btn": {"x": height/2.11, "y": height / 1.4, "w": height / (5/1.512), "h": height / 5, "make_rect": False},
+
 
             "chat_ui": {"x": height/0.7, "y":  height / 7.073, "w": (height*(1280/1080)) / (3.5), "h": height / 3.5, "make_rect": False},
             "configuration_ui": {"x": width/2 - ((height*(1920/1160))/1.4)/2, "y":  height/7, "w": (height*(1920/1160))/1.4, "h": height/1.4, "make_rect": False},
@@ -176,10 +187,10 @@ class Media:
                                 "size": (height/4.32, height / 54)}
 
         Media.clock_animation_metrics = {
-            "match_creation": (height/0.957, height / 2.578),
+            "match_creation": (width/2.05, height / 2.05),
             "match_creation_ready": (height/0.957, height / 1.4),
+            "join_match": (height/1.406, height / 2.25),
             "join_match_ready": (height/1.166, height / 2.216),
-            "join_match": (height/0.957, height / 1.6),
             "end": (height/0.957, height / 1.6)
         }
 
@@ -233,6 +244,106 @@ class Media:
     def scale(image, size_x, size_y):
         return pygame.transform.smoothscale(image, (size_x, size_y))
 
+    @staticmethod
+    def process_image(file_path):
+
+        image = cv2.imread(file_path)  # Cargar la imagen en formato BGR
+
+        image = Media.crop_center_square(image)  # Recortar la imagen en un cuadrado centrado
+
+        image = cv2.resize(image, (128, 128))  # Redimensionar la imagen a 128x128
+
+        _, image_bytes = cv2.imencode('.png', image)  # Codificar la imagen a formato PNG y obtener los bytes
+
+        return image_bytes.tobytes()  # Convertir a bytes
+
+    @staticmethod
+    def crop_center_square(img):
+        # Obtener las dimensiones de la imagen
+        height, width = img.shape[:2]
+        # Determinar el tamaño del lado del cuadrado (la dimensión menor entre ancho y alto)
+        min_dim = min(height, width)
+        # Calcular los márgenes para el recorte en el centro
+        top = (height - min_dim) // 2
+        left = (width - min_dim) // 2
+        # Recortar la imagen en un cuadrado centrado
+        return img[top:top + min_dim, left:left + min_dim]
+
+    @staticmethod
+    def apply_circular_mask(img):
+
+        height, width = img.shape[:2]  # Obtener el tamaño de la imagen
+
+        mask = np.zeros((height, width), dtype=np.uint8)  # Crear una máscara circular
+        cv2.circle(mask, (width // 2, height // 2), min(width, height) // 2, (255), -1)
+
+        img_circular = cv2.bitwise_and(img, img, mask=mask)  # Aplicar la máscara circular a la imagen en formato BGR
+
+        img_rgba = cv2.cvtColor(img_circular, cv2.COLOR_BGR2BGRA)  # Convertir a BGRA y asignar el canal alfa usando la máscara circular
+        img_rgba[:, :, 3] = mask  # Asignar la máscara al canal alfa para la transparencia
+
+        return img_rgba
+
+    @staticmethod
+    def opencv_to_pygame(image_bytes, new_size=(50, 50)):
+        # new_size = (int(new_size[0]), int(new_size[1]))
+        # img = cv2.resize(img, new_size)
+
+        # Convertir los bytes recibidos en una imagen de OpenCV
+        nparr = np.frombuffer(image_bytes, np.uint8)  # Convertir los bytes en un array de numpy
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decodificar los bytes a imagen
+
+        img_circular = Media.apply_circular_mask(img)  # Aplicar la máscara circular
+
+        img_rgb = cv2.cvtColor(img_circular, cv2.COLOR_BGRA2RGBA)  # Convertir la imagen a RGB antes de pasarla a Pygame para evitar cambios de color
+
+        img_surface = pygame.image.frombuffer(  # Crear la superficie de Pygame desde el buffer con el formato de color correcto
+            img_rgb.tobytes(), img_rgb.shape[1::-1], "RGBA"
+        )
+        img_surface = img_surface.convert_alpha()
+
+        img_surface = pygame.transform.smoothscale(img_surface, new_size)  # Redimensionar suavemente con smoothscale si es necesario
+
+        return img_surface
+
+    @staticmethod
+    def play_intro_video(path, game):
+        cap = cv2.VideoCapture(path)
+
+        fps = cap.get(cv2.CAP_PROP_FPS)  # Obtener la tasa de frames del video
+
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        video_clock = pygame.time.Clock()
+
+        start_time = time.time()
+
+        while cap.isOpened():
+
+            ret, frame = cap.read()  # Leer el siguiente frame
+
+            if ret:
+
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # convert the openCV frame (BGR) to RGB for pygame
+                frame = cv2.resize(frame, (game.width, game.height))  # adjust the size
+
+                frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0, 1))  # convert to a pygame surface
+
+                game.screen.blit(frame_surface, (0, 0))  # show the frame
+
+                pygame.display.update()  # update the screen
+
+                elapsed_time = time.time() - start_time
+                current_frame = int(elapsed_time * fps)  # get a precise aproximation of the current frame
+
+                # finihing the loop if it gets to the end of the video
+                if current_frame >= total_frames:
+                    break
+
+            video_clock.tick(fps+fps*0.01)  # I needed just a little bit more of extra delay
+
+        cap.release()
+
 
 class Fonts:
 
@@ -245,6 +356,9 @@ class Fonts:
         Fonts.chat_msg_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["chat_msg_font"])
         Fonts.warning_title_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["warning_title_font"])
         Fonts.warning_message_font = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["warning_message_font"])
+
+        Fonts.timer = pygame.font.SysFont("Tahoma", Media.fonts_metrics["timer"])
+        Fonts.latency = pygame.font.SysFont("Times New Roman", Media.fonts_metrics["latency"])
 
     def transform_text_line_to_paragraph(text, max_length, join=True):
         words = text.split()  # Dividir el texto en palabras

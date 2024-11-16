@@ -25,6 +25,8 @@ class Game:
 
     DARK_GREY = (20, 21, 23)
     LIGHT_GREY = (89, 90, 91)
+    MID_GREY = (33, 35, 37)
+    CREME = (231, 205, 169)
 
     board_size = 8
     center_points = []
@@ -174,9 +176,9 @@ class Piece:
 
     pieces_ids = []
 
-    health_color = (170, 0, 10)
+    health_color = (155, 8, 15)
     health_background_color = (33, 3, 3)
-    mana_color = (232, 159, 10)
+    mana_color = (220, 159, 30)
     mana_background_color = (76, 55, 5)
 
     def __init__(self, x, y, team, hp, mana, agility, defense, damage, specify_id=None, pos_mode="grid"):  # init method for evety piece where it gets another ingame values assigned
@@ -236,12 +238,16 @@ class Piece:
             is_my_piece = False
             mult = 10/12
 
+        # MAXIMUN VALUES, LIKE THE TOTAL WIDTH AND THE HEIGHT
+
         if is_my_piece:
-            bar_height = mult*Game.height/24
-            bar_width = mult*Game.height/5.125
+            bar_height = mult*Game.height/24  # this is the height of my pieces bar
+            bar_width = mult*Game.height/5.122  # this is the maximum width of the bar, the 100%
         else:
-            bar_height = mult*Game.height/16
-            bar_width = mult*Game.height/3.8
+            bar_height = mult*Game.height/16  # this is the height of the enemy pieces bar
+            bar_width = mult*Game.height/3.64  # this is the maximum width of the bar, the 100%
+
+        # THE WIDTH OF THE SECOND RECTANGLE WHICH INDICATES THE PERCENTAJE
 
         health_percentage = self.hp / self.max_hp  # calculates the length of the health bar in function of the percentage of health
         health_bar_length = int(bar_width * health_percentage)
@@ -249,7 +255,7 @@ class Piece:
         mana_percentage = self.mana / self.max_mana  # calculates the length of the mana bar in function of the percentage of mana
         mana_bar_length = int(bar_width * mana_percentage)
 
-        bar_x = (Game.width/15)
+        bar_x = (Game.width/15.4)  # this is the base position on which the bars will be draw. like the separation form the margin
 
         if is_my_piece:
             bar_y = (Game.height/1.14) - my_team_count * Game.height/9.4
@@ -264,13 +270,35 @@ class Piece:
         x_buff = Game.width/79 * mult
         y_buff = Game.height/54 * mult
 
-        pygame.draw.rect(Game.screen, self.health_background_color, (bar_x+x_buff, bar_y+y_buff, bar_width, bar_height))
-        pygame.draw.rect(Game.screen, self.health_color, (bar_x+x_buff, bar_y+y_buff, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
+        health_bg_surface = pygame.Surface((bar_width, bar_height), pygame.SRCALPHA)
+        health_bg_surface.set_alpha(180)  # Ajusta el nivel de transparencia (0 a 255)
+        health_bg_surface.fill(self.health_background_color)
+        health_surface = pygame.Surface((health_bar_length, bar_height), pygame.SRCALPHA)
+        health_surface.set_alpha(180)  # Ajusta el nivel de transparencia (0 a 255)
+        health_surface.fill(self.health_color)
+        Game.screen.blit(health_bg_surface, (bar_x + x_buff, bar_y + y_buff))
+        Game.screen.blit(health_surface, (bar_x + x_buff, bar_y + y_buff))
 
+        # this two lines were the previuos version of the 5 lines above where the rect wasnt transparent
+
+        """pygame.draw.rect(Game.screen, self.health_background_color, (bar_x+x_buff, bar_y+y_buff, bar_width, bar_height))
+        pygame.draw.rect(Game.screen, self.health_color, (bar_x+x_buff, bar_y+y_buff, health_bar_length, bar_height))  # Dibuja la barra de vida restante (verde)
+        """
         if is_my_piece:
 
+            mana_bg_surface = pygame.Surface((bar_width, bar_height // 2), pygame.SRCALPHA)
+            mana_bg_surface.set_alpha(192)  # Ajusta el nivel de transparencia (0 a 255)
+            mana_bg_surface.fill(self.mana_background_color)
+            mana_surface = pygame.Surface((mana_bar_length, bar_height // 2), pygame.SRCALPHA)
+            mana_surface.set_alpha(185)  # Ajusta el nivel de transparencia (0 a 255)
+            mana_surface.fill(self.mana_color)
+            Game.screen.blit(mana_bg_surface, (bar_x + x_buff, bar_y + bar_height + y_buff))
+            Game.screen.blit(mana_surface, (bar_x + x_buff, bar_y + bar_height + y_buff))
+            # this two lines were the previuos version of the 5 lines above where the rect wasnt transparent
+            """
             pygame.draw.rect(Game.screen, self.mana_background_color, (bar_x+x_buff, bar_y+bar_height+y_buff, bar_width, bar_height/2))
             pygame.draw.rect(Game.screen, self.mana_color, (bar_x+x_buff, bar_y+bar_height+y_buff, mana_bar_length, bar_height/2))  # Dibuja la barra de vida restante (verde)
+            """
 
             Game.screen.blit(Media.sized["team_bar"], (bar_x, bar_y))
         else:
@@ -722,8 +750,10 @@ class Profile_Menu:
         # Profile_Menu.slogan_input_focused = False
 
     @staticmethod
-    def draw():
+    def draw(my_pfp):
         Game.screen.blit(Media.sized["perfil_ui"], (Media.metrics["perfil_ui"]["x"], Media.metrics["perfil_ui"]["y"]))
+
+        Game.screen.blit(my_pfp, (Media.metrics["seleccionar_foto_btn"]["x"]+Game.height/3, Media.metrics["seleccionar_foto_btn"]["y"]-Game.height/30))
 
         Game.screen.blit(Media.sized["seleccionar_foto_btn"], (Media.metrics["seleccionar_foto_btn"]["x"], Media.metrics["seleccionar_foto_btn"]["y"]))
         Game.screen.blit(Media.sized["guardar_apodo_btn"], (Media.metrics["guardar_apodo_btn"]["x"], Media.metrics["guardar_apodo_btn"]["y"]))
@@ -743,7 +773,7 @@ class End_Game_Menu:
         Game.screen.blit(Media.sized["volver_btn"], (Media.metrics["volver_btn"]["x"], Media.metrics["volver_btn"]["y"]))
         Game.screen.blit(Media.sized["revancha_btn"], (Media.metrics["revancha_btn"]["x"], Media.metrics["revancha_btn"]["y"]))
 
-        Game.screen.blit(End_Game_Menu.winner_text, (Game.width//2, Game.height//2))
+        Game.screen.blit(End_Game_Menu.winner_text, (Game.width//2-End_Game_Menu.winner_text.get_width()/2, Game.height//2))
 
         ClockAnimation.draw()
 
@@ -759,29 +789,45 @@ class Name_Bar:
     def __init__(self) -> None:
         Name_Bar.resize()
 
+    """if enemy_pfp == "" or my_pfp == "":
+
+    img_bytes = Media.process_image("resources\\images\\indicator.png")
+
+    if my_pfp == "":
+        my_pfp = Media.opencv_to_pygame(img_bytes, (Game.height/11, Game.height/11))
+    if enemy_pfp == "":
+        enemy_pfp = Media.opencv_to_pygame(img_bytes, (Game.height/11, Game.height/11))"""
+
     @staticmethod
-    def draw(enemy_pfp=Game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")):
+    def draw(my_pfp=Game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"), enemy_pfp=""):
+
+        pfp_offset = Game.height/160
 
         # YOUR BAR
 
-        # Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"]+Game.height/100, Media.metrics["name_bar"]["y"]))  # +Game.height/60
+        y_offset = Game.height/1.89
 
-        # Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
-        # Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
-        # Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
+        Game.screen.blit(my_pfp, (Media.metrics["name_bar"]["x"]+pfp_offset, Media.metrics["name_bar"]["y"]+pfp_offset+y_offset))  # +Game.height/60
+
+        Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]+y_offset))
+        Game.screen.blit(Name_Bar.my_nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80+y_offset))
+        Game.screen.blit(Name_Bar.my_slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5+y_offset))
 
         # ENEMY BAR
 
-        Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"]+Game.height/100, Media.metrics["name_bar"]["y"]))  # +Game.height/60
+        Game.screen.blit(enemy_pfp, (Media.metrics["name_bar"]["x"]+pfp_offset, Media.metrics["name_bar"]["y"]+pfp_offset))  # +Game.height/60
 
         Game.screen.blit(Media.sized["name_bar"], (Media.metrics["name_bar"]["x"], Media.metrics["name_bar"]["y"]))
-        Game.screen.blit(Name_Bar.nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
-        Game.screen.blit(Name_Bar.slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
+        Game.screen.blit(Name_Bar.enemy_nickname_text, (Media.metrics["name_bar"]["x"]+Game.height/7.8, Media.metrics["name_bar"]["y"]+Game.height/80))
+        Game.screen.blit(Name_Bar.enemy_slogan_text, (Media.metrics["name_bar"]["x"]+Game.height/7, Media.metrics["name_bar"]["y"]+Game.height/17.5))
 
     @staticmethod
-    def resize(nickname="Enemigo", slogan="Clan desconocido."):
-        Name_Bar.nickname_text = Fonts.nickname_name_bar.render(nickname, True, Game.DARK_GREY)
-        Name_Bar.slogan_text = Fonts.slogan_name_bar.render(slogan, True, Game.DARK_GREY)
+    def resize(my_nickname="Túppp", my_slogan="Clan desconocido.pppp", enemy_nickname="Enemigo", enemy_slogan="Clan desconocido."):
+        Name_Bar.enemy_nickname_text = Fonts.nickname_name_bar.render(enemy_nickname, True, Game.DARK_GREY)
+        Name_Bar.enemy_slogan_text = Fonts.slogan_name_bar.render(enemy_slogan, True, Game.DARK_GREY)
+
+        Name_Bar.my_nickname_text = Fonts.nickname_name_bar.render(my_nickname, True, Game.DARK_GREY)
+        Name_Bar.my_slogan_text = Fonts.slogan_name_bar.render(my_slogan, True, Game.DARK_GREY)
 
 
 class Chat:
@@ -816,6 +862,8 @@ class Chat:
                 return texto
 
         Game.screen.blit(Media.sized["chat_ui"], (Media.metrics["chat_ui"]["x"], Media.metrics["chat_ui"]["y"]))
+
+        Game.screen.blit(Timer.latency_render, (Media.metrics["chat_ui"]["x"]+Game.height/80, Media.metrics["chat_ui"]["y"]+Game.height/80))  # THIS SHOWS THE LATENCY OF THE CONNECTION
 
         # rect4 = pygame.rect.Rect(Media.useful_rects_metrics["send_btn_chat"]["x"], Media.useful_rects_metrics["send_btn_chat"]["y"], Media.useful_rects_metrics["send_btn_chat"]["w"], Media.useful_rects_metrics["send_btn_chat"]["h"])
         # pygame.draw.rect(Game.screen, (255, 255, 125), rect4)
@@ -973,6 +1021,111 @@ class Warning:
         Warning.show_warning = True
         Warning.played_sound = False
         Warning.init_time = time.time()
+
+
+class Timer:
+
+    latency = 0
+    turn_beginning = 0
+    my_remaining_time = 0
+    enemy_remaining_time = 0
+    iteration_time_counter = 0
+
+    # my_timer_last_value = 0
+
+    def __init__(self):
+        Timer.update_enemy(0, time.time())
+        Timer.set_timers(300)  # 671
+        Timer.update_texts()
+
+    @staticmethod
+    def set_timers(seconds, which="all", measure=False):
+
+        if measure:
+            Timer.turn_beginning = time.time()
+            Timer.iteration_time_counter = time.time()
+
+        # Timer.my_timer_last_value = Timer.my_remaining_time
+
+        if which == "me" or which == "all":
+            Timer.my_remaining_time = seconds
+
+        if which == "enemy" or which == "all":
+            Timer.enemy_remaining_time = seconds
+
+    @staticmethod
+    def update_enemy(passed_enemy_remaining_time, time_when_sent):
+
+        Timer.latency = (time.time() - time_when_sent)/1000  # latency in miliseconds
+        Timer.latency_render = Fonts.latency.render(f"{(Timer.latency*1000*2):.1f} ms", True, Game.MID_GREY)
+
+        if Timer.latency < 1500:
+            Timer.enemy_remaining_time = passed_enemy_remaining_time
+        else:
+            Timer.enemy_remaining_time = passed_enemy_remaining_time - Timer.latency*1000*2
+            return True, Timer.latency
+
+        return False, 0
+
+    @staticmethod
+    def start_counting_my_turn():  # this function everytime its called saves the time of that moment and returns the difference in seconds between the last time it was called. used to measure how much my turn lasts
+        x = Timer.turn_beginning
+        Timer.turn_beginning = time.time()
+        return Timer.turn_beginning-x, Timer.turn_beginning
+
+    @staticmethod
+    def who_run_out_of_time(my_team, enemy_team):
+        if Timer.my_remaining_time <= 0:
+            return my_team
+        else:
+            return enemy_team
+
+    @staticmethod
+    def update_texts():
+        render = Fonts.timer.render(Timer.formatting_secs(Timer.my_remaining_time), True, Game.CREME)
+        render.set_alpha(72)
+        rotated_surface = pygame.transform.rotate(render, 45)  # Rotar la superficie del texto en el ángulo deseado
+        rotated_rect = rotated_surface.get_rect(center=(Game.height/0.73, Game.height/1.97))  # Obtener el rectángulo de la superficie rotada y centrarlo en la posición deseada
+        Timer.my_timer = (rotated_surface, rotated_rect)
+
+        render = Fonts.timer.render(Timer.formatting_secs(Timer.enemy_remaining_time), True, Game.CREME)
+        render.set_alpha(72)
+        rotated_surface = pygame.transform.rotate(render, -45)  # Rotar la superficie del texto en el ángulo deseado
+        rotated_rect = rotated_surface.get_rect(center=(Game.height/0.73, Game.height/2.85))  # Obtener el rectángulo de la superficie rotada y centrarlo en la posición deseada
+        Timer.enemy_timer = (rotated_surface, rotated_rect)
+
+    @staticmethod
+    def draw_timer():
+
+        Game.screen.blit(Timer.my_timer[0], Timer.my_timer[1].topleft)  # Dibujar la superficie rotada en la pantalla
+        Game.screen.blit(Timer.enemy_timer[0], Timer.enemy_timer[1].topleft)  # Dibujar la superficie rotada en la pantalla
+
+    @staticmethod
+    def update_n_draw(current_turn, my_team):
+
+        iteration_time = time.time() - Timer.iteration_time_counter
+
+        if iteration_time > 0.33:  # this gets executed 3 time per second
+            Timer.iteration_time_counter = time.time()
+
+            if current_turn == my_team:
+                Timer.my_remaining_time -= iteration_time
+            else:
+                Timer.enemy_remaining_time -= iteration_time
+
+            if Timer.my_remaining_time <= 0 or Timer.enemy_remaining_time <= 0:
+                return True
+
+            Timer.update_texts()
+
+        Timer.draw_timer()  # this blits the images in the screen so it gets refreshed every frame
+
+        return False
+
+    def formatting_secs(seconds):
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        return f"{int(minutes)}:{int(remaining_seconds):02d}"
 
 
 class ClockAnimation:
@@ -1149,6 +1302,27 @@ class Turn_Btn:
         Turn_Btn.rect = Media.sized["turn_btn"].get_rect()
         Turn_Btn.rect.topleft = (Media.metrics["turn_btn"]["x"], Media.metrics["turn_btn"]["y"])
         Turn_Btn.image_mask = pygame.mask.from_surface(Media.sized["turn_btn"])
+
+
+class Turn_History:
+
+    def __init__(self):
+        Turn_History.resize()
+
+    def draw(self):
+
+        Game.screen.blit(Media.sized["turn_next_btn"], Turn_History.rect_next)
+        Game.screen.blit(Media.sized["turn_prev_btn"], Turn_History.rect_prev)
+
+    @staticmethod
+    def resize():
+        Turn_History.rect_next = Media.sized["turn_next_btn"].get_rect()
+        Turn_History.rect_next.topleft = (Media.metrics["turn_next_btn"]["x"], Media.metrics["turn_next_btn"]["y"])
+        Turn_History.image_mask_next = pygame.mask.from_surface(Media.sized["turn_next_btn"])
+
+        Turn_History.rect_prev = Media.sized["turn_prev_btn"].get_rect()
+        Turn_History.rect_prev.topleft = (Media.metrics["turn_prev_btn"]["x"], Media.metrics["turn_prev_btn"]["y"])
+        Turn_History.image_mask_prev = pygame.mask.from_surface(Media.sized["turn_prev_btn"])
 
 
 class Mini_Flags:

@@ -72,11 +72,14 @@ active_uis = {
 players_info = {
     "me": {"nickname": game.replace_line_in_txt("user_info\\data.txt", "nickname", "", mode="read"),
            "slogan": game.replace_line_in_txt("user_info\\data.txt", "slogan", "", mode="read"),
-           "profile_picture": game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"), },
+           "profile_picture": game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read"),
+           "profile_picture_img": "",
+           },
     "enemy": {"nickname": "Enemigo",
               "slogan": "",
               "profile_picture": "default",
-              "profile_picture_img": "", },
+              "profile_picture_img": "",
+              },
 }
 
 
@@ -146,7 +149,7 @@ for card_type, cards in inventory.cards.items():
 
 def setup():
 
-    global piece_selection_menu, end_menu, name_bar, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
+    global piece_selection_menu, timer, turn_history, end_menu, name_bar, donations_menu, warning_manager, chat_menu, profile_menu, slider_menu, turn_btn, mini_flag, lobby, sound_player, cursor, match_creation, join_match, fps, configuration_menu
 
     sound_player = clases.Sound()  # creating an instance of the sound class to play sfx sounds
 
@@ -168,6 +171,8 @@ def setup():
     donations_menu = clases.Donation_Menu()
     name_bar = clases.Name_Bar()
     end_menu = clases.End_Game_Menu()
+    timer = clases.Timer()
+    turn_history = clases.Turn_History()
 
     fps = game.dev_mode.DisplayFrequency
 
@@ -229,6 +234,11 @@ def set_up_online(mode):  # this function sets up the server and client objects 
             sckt.set_up_server(port)
 
         online_tools.Online.public_ip = online_tools.Online.get_public_ip()
+
+        if online_tools.Online.public_ip == "error":  # in case get_public_ip has returned an error
+            clases.Warning.warn("Problema al obtener IP", "No se pudo obtener la IP pública de la API. Puedes buscar tu IP en Internet y eso también funcionará como clave. Deberás pasarsela a tu rival.", 40)
+            online_tools.Online.public_ip = "error"
+
         clases.MatchCreation.render_ip_text()
 
         active_uis["match_creation"] = False
@@ -274,13 +284,18 @@ def receive_messages():  # This function receives messages from the server while
                 case "moved":  # id-x-y-change_mana. thats the format this case expects to receive. id is the identifier of the piece that moved and x and y are the new coordinates
                     piece_id = args[1]
                     for piece in active_pieces:
-                        if piece.id == piece_id:
+                        if piece. id == piece_id:
                             # those for loops just find the piece in the actieve_pieces list and then this line executes the move
                             piece.grid_pos_to_pixels(clases.Piece.pov_based_pos_translation(int(args[2])), clases.Piece.pov_based_pos_translation(int(args[3])), bypass_mana=False, change_mana=args[4])
                     sound_player.play_sfx(sound_player.SFX[1])
 
-                case "turn":
-                    change_turn()
+                case "turn_n_clk_update":
+                    print("reeeeeeeeeeeeeeeeeecibidodoooo el cambio de turnnnn")
+                    print(args[1], args[2])
+                    change_turn_n_timer(False, (float(args[1]), float(args[2])))
+
+                case "latencyerror":
+                    timer.set_timer(clases.Timer.my_remaining_time-int(args[1])*1000*2)
 
                 case "created":  # specie-x-y-team-hp-mana-agility-defense-damage-id. thats the format this case expects to receive, all the arguments to create a new piece which is going to be exactly the same as the one our enemy created
                     p_specie = args[1]
@@ -329,9 +344,9 @@ def receive_messages():  # This function receives messages from the server while
                     sckt.send("ready_to_receive_image")
                     # print("sended ready_to_receive_image")
 
-                    img = receive_image(sckt, args[1])  # in args 1 comes the size of the image
+                    img = receive_image_bytes(sckt, args[1])  # in args 1 comes the size of the image
 
-                    new_img = opencv_to_pygame(img, (game.height/11, game.height/11))
+                    new_img = Media.opencv_to_pygame(img, (game.height/11.65, game.height/11.65))
 
                     players_info["enemy"]["profile_picture_img"] = new_img
                     # print("img saved")
@@ -350,7 +365,7 @@ def receive_messages():  # This function receives messages from the server while
 
                     if not "Tú" == args[4]:  # if the user nickname is not the default ("Tú") then we rename it
                         players_info["enemy"]["nickname"] = args[4]
-                    else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemy
+                    else:  # if the user hasnt changed his name and he is called "Tú" we rename him as Enemigo
                         players_info["enemy"]["nickname"] = "Enemigo"
 
                     players_info["enemy"]["slogan"] = args[5]
@@ -371,7 +386,7 @@ def receive_messages():  # This function receives messages from the server while
                     time.sleep(0.15)
 
                     pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
-                    pfp_bytes = process_image(pfp_path)
+                    pfp_bytes = Media.process_image(pfp_path)
                     send_image(sckt, pfp_bytes)
 
                     time.sleep(0.3)
@@ -435,7 +450,7 @@ def match_set_up():
             time.sleep(0.15)
 
             pfp_path = game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")
-            pfp_bytes = process_image(pfp_path)
+            pfp_bytes = Media.process_image(pfp_path)
             send_image(sckt, pfp_bytes)  # sending our profile picture to the client (opponent)"""
 
             # print("image sended")
@@ -461,19 +476,7 @@ def match_set_up():
     clases.MatchCreation.show_ingresar_btn = False
     clases.ClockAnimation.set_animation_status(False)
 
-
-def process_image(file_path):
-    # Cargar la imagen en formato BGR
-    image = cv2.imread(file_path)
-
-    # Redimensionar la imagen a 128x128
-    image = cv2.resize(image, (128, 128))
-
-    # Codificar la imagen a formato PNG y obtener los bytes
-    _, image_bytes = cv2.imencode('.png', image)
-
-    # Convertir a bytes
-    return image_bytes.tobytes()
+    name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
 
 
 def send_image(scktt, image_bytes):
@@ -510,7 +513,7 @@ def send_image(scktt, image_bytes):
     scktt.send_not_encoded(b"")  # Enviar el delimitador al final
 
 
-def receive_image(scktt, image_size):
+def receive_image_bytes(scktt, image_size):
 
     # image_size = int(scktt.recieve())   # Recibir el tamaño de la imagen
 
@@ -524,109 +527,13 @@ def receive_image(scktt, image_size):
             break
         received_image_bytes += fragment  # Concatenar el fragmento recibido
 
-    # Convertir los bytes recibidos en una imagen de OpenCV
-    nparr = np.frombuffer(received_image_bytes, np.uint8)  # Convertir los bytes en un array de numpy
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decodificar los bytes a imagen
-
-    return img  # Devolver la imagen OpenCV
-
-
-def apply_circular_mask(img):
-    # Obtener el tamaño de la imagen
-    height, width = img.shape[:2]
-
-    # Crear una máscara circular
-    mask = np.zeros((height, width), dtype=np.uint8)
-    cv2.circle(mask, (width // 2, height // 2), min(width, height) // 2, (255), -1)
-
-    # Aplicar la máscara circular a la imagen en formato BGR
-    img_circular = cv2.bitwise_and(img, img, mask=mask)
-
-    # Convertir a BGRA y asignar el canal alfa usando la máscara circular
-    img_rgba = cv2.cvtColor(img_circular, cv2.COLOR_BGR2BGRA)
-    img_rgba[:, :, 3] = mask  # Asignar la máscara al canal alfa para la transparencia
-
-    return img_rgba
-
-
-def opencv_to_pygame(img, new_size=(128, 128)):
-    # Asegurarse de que el tamaño sea una tupla de enteros
-    new_size = (int(new_size[0]), int(new_size[1]))
-
-    # Redimensionar la imagen
-    img = cv2.resize(img, new_size)
-
-    # Aplicar la máscara circular
-    img_circular = apply_circular_mask(img)
-
-    # Convertir la imagen a RGB antes de pasarla a Pygame para evitar cambios de color
-    img_rgb = cv2.cvtColor(img_circular, cv2.COLOR_BGRA2RGBA)
-
-    # Crear la superficie de Pygame desde el buffer con el formato de color correcto
-    img_surface = pygame.image.frombuffer(
-        img_rgb.tobytes(), img_rgb.shape[1::-1], "RGBA"
-    )
-    img_surface = img_surface.convert_alpha()
-
-    # Redimensionar suavemente con smoothscale si es necesario
-    img_surface = pygame.transform.smoothscale(img_surface, new_size)
-
-    return img_surface
-
-
-"""def opencv_to_pygame(img, new_size):
-    # Convertir la imagen de OpenCV (BGR) a RGB
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    # Convertir a formato Pygame
-    img_surface = pygame.surfarray.make_surface(img_rgb)
-
-    # Convertir para soportar canal alfa (transparencia)
-    img_surface = img_surface.convert_alpha()
-
-    # Redimensionar la imagen con suavizado (smoothscale)
-    img_surface = pygame.transform.smoothscale(img_surface, new_size)
-
-    return img_surface"""
+    return received_image_bytes
 
 
 def play_intro_video():
 
-    cap = cv2.VideoCapture(intro_path["video"])
+    Media.play_intro_video(intro_path["video"], game)
 
-    fps = cap.get(cv2.CAP_PROP_FPS)  # Obtener la tasa de frames del video
-
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    video_clock = pygame.time.Clock()
-
-    start_time = time.time()
-
-    while cap.isOpened():
-
-        ret, frame = cap.read()  # Leer el siguiente frame
-
-        if ret:
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # convert the openCV frame (BGR) to RGB for pygame
-            frame = cv2.resize(frame, (game.width, game.height))  # adjust the size
-
-            frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0, 1))  # convert to a pygame surface
-
-            game.screen.blit(frame_surface, (0, 0))  # show the frame
-
-            pygame.display.update()  # update the screen
-
-            elapsed_time = time.time() - start_time
-            current_frame = int(elapsed_time * fps)  # get a precise aproximation of the current frame
-
-            # finihing the loop if it gets to the end of the video
-            if current_frame >= total_frames:
-                break
-
-        video_clock.tick(fps+fps*0.01)  # I needed just a little bit more of extra delay
-
-    cap.release()
     active_uis["intro"] = False
 
 
@@ -662,14 +569,33 @@ def finish_program():  # this function closes the program
     sys.exit()
 
 
-def change_turn(send=False):  # changes the current turn from blue to red or red to blue
-    global current_turn
-    if current_turn == "blue":
+def change_turn_n_timer(send=False, args=()):  # changes the current turn from blue to red or red to blue
+
+    global current_turn, my_team
+
+    if current_turn == my_team:  # this part of the code manages the timer information sending. this is executed everytime any player changes the turn.
+
+        print("this is my_turn niggggggggggg")
+        info = timer.start_counting_my_turn()   # this returns the seconds my turn lasted and the current time in order
+        print("set_timerssss", info[0])
+        timer.set_timers(clases.Timer.my_remaining_time-info[0], "me")
+
+    else:
+        info2 = timer.update_enemy(args[0], args[1])
+        if info2[0]:
+            print("LATENCY ERROR NIGGGH")
+            sckt.send(f"latencyerror-{info2[1]}")
+
+        timer.start_counting_my_turn()
+
+    if current_turn == "blue":  # this lines of code change the current turn
         current_turn = "red"
     else:
         current_turn = "blue"
-    if play_online and send:
-        sckt.send("turn")
+
+    if send:
+        sckt.send(f"turn_n_clk_update-{clases.Timer.my_remaining_time:.3f}-{info[1]:.3f}")
+        print("timer sending: " + f"turn_n_clk_update-{clases.Timer.my_remaining_time:.3f}-{info[1]:.3f}" + "               ", clases.Timer.my_remaining_time)
     print(f"Turno del equipo {current_turn}")  # Mensaje para depuración
 
 
@@ -756,10 +682,12 @@ def draw_ingame():
 
     game.screen.blit(Media.backgrounds[selected_background], (0, 0))  # displaying background
 
-    game.screen.blit(Media.sized["chat_btn"], (Media.metrics["chat_btn"]["x"], Media.metrics["chat_btn"]["y"]))
+    if not active_uis["piece_selection"]:
+        game.screen.blit(Media.sized["chat_btn"], (Media.metrics["chat_btn"]["x"], Media.metrics["chat_btn"]["y"]))
 
     mini_flag.draw(current_turn)
     turn_btn.draw()
+    turn_history.draw()
 
     my_team_count = 0
     enemy_count = 0
@@ -773,7 +701,17 @@ def draw_ingame():
         else:
             enemy_count += 1
 
-    name_bar.draw(players_info["enemy"]["profile_picture_img"])
+    name_bar.draw(players_info["me"]["profile_picture_img"], players_info["enemy"]["profile_picture_img"])
+
+    if timer.update_n_draw(current_turn, my_team):
+        loser = timer.who_run_out_of_time(my_team, enemy_team)
+        if loser == my_team:
+            text = f"Has ganado! las piezas {my_team} han dominado el tablero!"
+        else:
+            text = f"{players_info['enemy']['nickname']} es el ganador! Suerte la próxima..."
+
+        start_end_game_transition = True
+
     # for i in game.center_points:
     #    pygame.draw.circle(game.screen, (255, 255, 255), (i[0], i[1]), a)
 
@@ -793,7 +731,7 @@ def draw():  # MANAGING THE DRAWING OF THE WHOLE UIs and the menus.
         lobby.draw()
 
     elif active_uis["profile"]:
-        profile_menu.draw()
+        profile_menu.draw(players_info["me"]["profile_picture_img"])
 
     elif active_uis["match_creation"] or active_uis["match_creation_ready"]:
 
@@ -864,6 +802,7 @@ loop_count = 0
 pygame.mixer.init()
 
 if active_uis["intro"]:
+
     pygame.mixer.music.set_volume(0.6)
     # THE INTRO VIDEO IS PLAYED WHILE SETTING OTHER "HEAVY" THINGS UP
     threading.Thread(target=play_intro_video).start()
@@ -872,6 +811,8 @@ if active_uis["intro"]:
     # SETTING SOME THINGS
     setup()
 
+    players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+
     # ONCE IT FINISHES LOADING EVERYTHING IT WAITS FOR THE VIDEO TO END
     while active_uis["intro"] == True:
         time.sleep(0.05)
@@ -879,6 +820,8 @@ if active_uis["intro"]:
 else:
     pygame.mixer.music.set_volume(0.3)
     setup()
+    players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+
 
 set_mouse_usage(True, False)
 # set_mouse_usage(False, True)
@@ -928,9 +871,13 @@ while True:
             start_end_game_transition = False
 
             if check_win()[1] == my_team:
-                text = f"Has ganado! las piezas {my_team} han dominado el tablero!"
+                if my_team == "red":
+                    x = "rojas"
+                else:
+                    x = "azules"
+                text = f"Has ganado! las piezas {x} han dominado el tablero!"
             else:
-                text = f"{players_info['enemy']['nickname']} es el ganador! Suerte la próxima..."
+                text = f"{players_info['enemy']['nickname'].capitalize()} es el ganador! Suerte la próxima..."
             end_menu.resize(text)
 
     if (ite0 >= 600 or (ite0 == 0 and 1 < time.time()-init_time < 20)):  # checks if its necessary to play another song every 600 iterations. it can be bypassed by being the fisrt iteration. when pause is enabled you cant play music
@@ -1018,9 +965,16 @@ while True:
                                 start_end_game_transition = True
 
                 if active_uis["ingame"]:
-                    if my_team == current_turn or not play_online:
+
+                    if my_team == current_turn or not play_online:  # if its players turn and the player clicked in the turn button then its changed and notifies the other player
                         if turn_btn.rect.collidepoint(event.pos) and get_at_with_sound(turn_btn.image_mask, (event.pos[0] - turn_btn.rect.x, event.pos[1] - turn_btn.rect.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
-                            change_turn(send=True)
+                            change_turn_n_timer(send=True)
+
+                    if turn_history.rect_next.collidepoint(event.pos) and get_at_with_sound(turn_history.image_mask_next, (event.pos[0] - turn_history.rect_next.x, event.pos[1] - turn_history.rect_next.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
+                        print("CLICKED NEXT")
+
+                    elif turn_history.rect_prev.collidepoint(event.pos) and get_at_with_sound(turn_history.image_mask_prev, (event.pos[0] - turn_history.rect_prev.x, event.pos[1] - turn_history.rect_prev.y)):  # Verify if the position of the mouse is inside the rectangle and if the click was on a visible pixel # noqa
+                        print("CLICKED PREV")
 
                 if check_ui_allowance(Media.rects["setting_btn"]) and collidepoint_with_sound(Media.rects["setting_btn"]["rect"], event.pos):  # check if btn was clicked
 
@@ -1052,6 +1006,8 @@ while True:
                     if selected_file_path.endswith('.png'):  # check if the file is a png
                         game.replace_line_in_txt("user_info\\data.txt", "pfp", f"pfp: {selected_file_path}", mode="write")  # update the value of the profile picture in the data.txt file
                         sound_player.play_sfx(sound_player.SFX[3])
+                        players_info["me"]["profile_picture_img"] = Media.opencv_to_pygame(Media.process_image(game.replace_line_in_txt("user_info\\data.txt", "pfp", "", mode="read")), (game.height/11.65, game.height/11.65))
+
                     else:
                         clases.Warning.warn("Imágen inválida", "La imágen debe ser formato PNG y es recomendable que no supere una resolución de 512x512 [1:1].", 8)
 
@@ -1063,7 +1019,7 @@ while True:
 
                         game.replace_line_in_txt("user_info\\data.txt", "nickname", f"nickname: {entry}", mode="write")  # update the value of the nickname
                         sound_player.play_sfx(sound_player.SFX[3])
-                        clases.Profile_Menu.nickname_input.set_text("Ingrese un apodo")  # Borrar el texto cuando se haga focus
+                        clases.Profile_Menu.nickname_input.set_text(entry)  # Borrar el texto cuando se haga focus
                         # clases.Profile_Menu.nickname_input_focused = False
 
                     else:
@@ -1077,7 +1033,7 @@ while True:
 
                         game.replace_line_in_txt("user_info\\data.txt", "slogan", f"slogan: {entry}", mode="write")  # update the value of the slogan
                         sound_player.play_sfx(sound_player.SFX[3])
-                        clases.Profile_Menu.slogan_input.set_text("Ingrese un lema")  # Borrar el texto cuando se haga focus
+                        clases.Profile_Menu.slogan_input.set_text(entry)  # Borrar el texto cuando se haga focus
                         # clases.Profile_Menu.slogan_input_focused = False
 
                     else:
@@ -1139,9 +1095,12 @@ while True:
 
                     slider_menu = clases.Slider_Menu()
 
-                    name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
+                    name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
                     turn_btn.resize()
+                    turn_history.resize()
                     mini_flag.resize()
+
+                    timer.update_texts()
 
                     manager.ui_theme.cursor_blink_time = 0.5
 
@@ -1317,7 +1276,7 @@ while True:
                                     if pieces_have_been_chosen:
                                         pieces_have_been_chosen = False  # reset the variable for later new matches
                                         active_uis["piece_selection"] = False
-                                        name_bar.resize(players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
+                                        name_bar.resize(players_info["me"]["nickname"], players_info["me"]["slogan"], players_info["enemy"]["nickname"], players_info["enemy"]["slogan"])
                                         break
 
                                 for piece in my_pieces:  # sends the comand to create your chosen pieces in the enemy active_pieces list
@@ -1325,6 +1284,9 @@ while True:
 
                             my_pieces = {}  # clear pieces list
                             active_uis["ingame"] = True  # start the game
+
+                            timer.set_timers(300, "all", measure=True)  # start the timers
+                            timer.update_texts()
 
         if event.type == pygame.KEYDOWN:  # if a key was pressed
 

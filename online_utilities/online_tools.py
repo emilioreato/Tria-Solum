@@ -28,9 +28,9 @@ class Online:
                 public_ip = response.json()['ip'].strip()  # converts the json response to a python dict and then searches for the "ip" value.
                 return public_ip
             else:
-                return "Couldnt get public IP from API. You can look up your IP on the internet and that also works"
-        except Exception as e:
-            return f"Error: {e}"
+                return "error"
+        except Exception:
+            return "error"
 
 
 class Server(Online):  # a class that contains all the functions and utilities to be able to set a connection between two computers
