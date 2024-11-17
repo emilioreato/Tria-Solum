@@ -1353,3 +1353,162 @@ class Cursor:
     @ staticmethod
     def draw():
         Game.screen.blit(Cursor.image, pygame.mouse.get_pos())
+
+
+class Particle:
+
+    # Colores cálidos balanceados
+    PARTICLE_COLORS = [
+        (255, 180, 70),  # Naranja claro
+        (255, 100, 50),  # Rojo anaranjado
+        (220, 80, 70),   # Rojo cálido
+        (200, 60, 50)    # Bordo oscuro
+    ]
+
+    # Color dorado para las partículas grandes
+    GOLD_COLOR = (255, 215, 0)
+
+    def __init__(self, x, y, origin_x, origin_y, target_x, target_y, color, size_factor=1, speed_factor=1):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.size = int(random.choices([1, 2, 3], weights=[30, 50, 20])[0] * size_factor)  # Tamaño variable
+        self.speed_x = random.uniform(-0.105, 0.105) * speed_factor  # Velocidad incrementada
+        self.speed_y = random.uniform(-0.105, 0.105) * speed_factor  # Velocidad incrementada
+        self.angle = random.uniform(-math.pi / 4, math.pi / 4)  # Dirección inicial aleatoria
+        self.angle_change = random.uniform(-0.1, 0.1)  # Variación de ángulo para simular movimiento fluido
+        self.lifetime = self.calculate_lifetime(x, y, origin_x, origin_y, target_x, target_y)
+
+    def calculate_lifetime(self, x, y, origin_x, origin_y, target_x, target_y):
+        # Calculamos la distancia al segmento
+        distance = Particle.distance_from_segment(x, y, origin_x, origin_y, target_x, target_y)
+
+        # Umbral de desviación de la partícula con respecto al hilo
+        max_distance = 0.1 * math.sqrt((target_x - origin_x) ** 2 + (target_y - origin_y) ** 2)  # 10% de la longitud total del hilo
+
+        deviation_percent = min(distance / max_distance, 0.1)  # Limitar la desviación al 10%
+
+        # Cálculo de vida en función de la desviación
+        if deviation_percent >= 0.1:
+            lifetime = 1  # Si está a 1/10 de la distancia, vida es 1ms
+        else:
+            lifetime = 400 * (1 - deviation_percent / 0.1)  # 400ms para desviación 1%, 0ms para desviación 10%
+
+        return lifetime
+
+    def move(self):
+        # Movimiento con cambio de dirección suave
+        self.angle += self.angle_change
+        self.speed_x = math.cos(self.angle) * 0.105  # Velocidad incrementada
+        self.speed_y = math.sin(self.angle) * 0.105  # Velocidad incrementada
+
+        # Introducimos más aleatoriedad para curvar el movimiento
+        self.speed_x += random.uniform(-0.05, 0.05)
+        self.speed_y += random.uniform(-0.05, 0.05)
+
+        self.x += self.speed_x
+        self.y += self.speed_y
+        self.lifetime -= 1  # Disminuir lifetime por fotograma
+
+    def draw(self, surface):
+        if self.lifetime > 0:
+            pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.size)
+
+    def distance_from_segment(x, y, x1, y1, x2, y2):
+        # Vectores de dirección del segmento
+        dx = x2 - x1
+        dy = y2 - y1
+        # Cálculo del producto punto para la proyección
+        segment_length_sq = dx * dx + dy * dy
+        if segment_length_sq == 0:
+            return math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
+
+        t = ((x - x1) * dx + (y - y1) * dy) / segment_length_sq
+
+        # Si t está fuera del rango [0, 1], tomar la distancia a los puntos extremos
+        if t < 0:
+            closest_x, closest_y = x1, y1
+        elif t > 1:
+            closest_x, closest_y = x2, y2
+        else:
+            closest_x = x1 + t * dx
+            closest_y = y1 + t * dy
+
+        return math.sqrt((x - closest_x) ** 2 + (y - closest_y) ** 2)
+
+
+class Movement_Indicator:  # Clase para el Indicador de Movimiento (hilo conector entre posicion inicial y nueva)
+
+    def __init__(self, origin):
+        self.origin = origin
+        self.particles = []  # Lista para almacenar las partículas
+        self.frame_count = 0  # Contador para controlar la actualización cada 4 fotogramas
+        self.last_position = None  # Para almacenar la posición anterior del segmento
+        self.time_in_same_position = 0  # Tiempo que el segmento ha estado en la misma posición
+        self.max_large_particles = 5  # Límite de partículas grandes por fotograma
+        self.large_particle_timer = 0  # Temporizador para generar una partícula dorada por segundo
+
+    def h(self):
+        print("kklklk manito")
+
+    def create_particle(self, pos, size_factor, color):
+        """Crea una nueva partícula y la agrega a la lista de partículas."""
+        t = random.uniform(0, 1)
+        x = self.origin[0] + t * (pos[0] - self.origin[0])
+        y = self.origin[1] + t * (pos[1] - self.origin[1])
+        self.particles.append(Particle(x, y, self.origin[0], self.origin[1], pos[0], pos[1], color, size_factor=size_factor))
+
+    def draw(self, pos):
+        # Controlar la posición del segmento
+        if self.last_position is None:
+            self.last_position = pos
+
+        # Verificar si la variación de posición es menor al 4%
+        distance_moved = math.sqrt((pos[0] - self.last_position[0]) ** 2 + (pos[1] - self.last_position[1]) ** 2)
+        max_distance = math.sqrt((Game.width - 0) ** 2 + (Game.height - 0) ** 2)  # Distancia máxima posible en la pantalla
+        movement_percentage = distance_moved / max_distance
+
+        # Si la variación es menor al 4%, aumentar el tiempo en la misma posición
+        if movement_percentage < 0.04:
+            self.time_in_same_position += 1
+        else:
+            self.time_in_same_position -= 60  # Resetear si el segmento se mueve demasiado
+            if self.time_in_same_position < 0:
+                self.time_in_same_position = 0
+
+        # Solo generar una partícula dorada cada segundo
+        if self.time_in_same_position >= 240 and random.randint(0, 100) < 5:  # 4 segundos en la misma posición
+            self.create_particle(pos, 2, Particle.GOLD_COLOR)
+
+        else:
+            # Crear partículas normales
+            self.create_particle(pos, 1, random.choice(Particle.PARTICLE_COLORS))
+
+        # Solo recalcular la distancia cada 4 fotogramas
+        self.frame_count += 1
+        if self.frame_count >= 4:
+            self.frame_count = 0  # Reiniciar contador
+
+            # Seleccionar un 25% de las partículas aleatoriamente, pero sin exceder el número total de partículas
+            particles_to_check = random.sample(self.particles, min(len(self.particles), max(1, len(self.particles) // 4)))
+
+            # Recalcular la vida de las partículas seleccionadas
+            for particle in particles_to_check:
+                particle.lifetime = particle.calculate_lifetime(particle.x, particle.y, self.origin[0], self.origin[1], pos[0], pos[1])
+
+        # Actualizar y dibujar las partículas
+        to_remove = []  # Lista para almacenar las partículas que deben eliminarse
+        for particle in self.particles:
+            particle.move()
+            particle.draw(Game.screen)
+
+            # Si la partícula ha muerto, agregarla a la lista de eliminación
+            if particle.lifetime <= 0:
+                to_remove.append(particle)
+
+        # Eliminar partículas muertas
+        for particle in to_remove:
+            self.particles.remove(particle)
+
+        # Actualizar la posición anterior
+        self.last_position = pos

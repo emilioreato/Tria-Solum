@@ -91,6 +91,9 @@ match_configured = False  # variables related to the state of te communication a
 
 current_turn = None
 
+# global movement_indicator
+# movement_indicator = None
+
 global fps_checking_rate
 fps_checking_rate = 1
 
@@ -313,13 +316,18 @@ def receive_messages():  # This function receives messages from the server while
                     print("info recevibed: ", p_specie, "  ", p_x, "  ", p_y, "  ", p_team, "  ", p_hp, "  ", p_mana, "  ", p_agility, "  ", p_defense, "  ", p_damage, "  ", p_id)
 
                     if p_specie == "mage":  # based on the specie of the piece we use different clases
-                        active_pieces.append(clases.Mage(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        # active_pieces.append(clases.Mage(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        active_pieces.insert(0, clases.Mage(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
                         print(active_pieces)
                     elif p_specie == "archer":
-                        active_pieces.append(clases.Archer(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        # active_pieces.append(clases.Archer(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        active_pieces.insert(0, clases.Archer(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+
                         print(active_pieces)
                     elif p_specie == "knight":
-                        active_pieces.append(clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        # active_pieces.append(clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+                        active_pieces.insert(0, clases.Knight(p_x, p_y, p_team, p_hp, p_mana, p_agility, p_defense, p_damage, specify_id=p_id))
+
                         print(active_pieces)
 
                 case "dead":  # if our enemy kills a piece, it sends us this message so we can remove it from the active_pieces list
@@ -415,7 +423,7 @@ def receive_messages():  # This function receives messages from the server while
 
                     global i_have_chosen_pieces
                     while not i_have_chosen_pieces:
-                        print("nigggk")
+                        # print("nigggk")
                         time.sleep(0.05)
 
                     my_pieces = [piece for piece in active_pieces if piece.team == my_team]  # This will filter out all odd numbers from the list
@@ -702,6 +710,10 @@ def draw_ingame():
     turn_btn.draw()
     turn_history.draw()
 
+    if follow_mouse and not active_uis["piece_selection"]:
+        global movement_indicator
+        movement_indicator.draw(pygame.mouse.get_pos())  # this updates the movement indicator position
+
     my_team_count = 0
     enemy_count = 0
     for piece in active_pieces:    # displaying all pieces and their health and mana bars
@@ -955,9 +967,13 @@ while True:
                         if piece.team == my_team:
                             selected_piece = active_pieces.index(piece)
 
-                            if (current_turn == active_pieces[selected_piece].team) or i_have_chosen_pieces:                    # if (current_turn == "blue" and active_pieces[selected_piece].team == "blue") or (current_turn == "red" and active_pieces[selected_piece].team == "red"):
+                            if (current_turn == active_pieces[selected_piece].team) or i_have_chosen_pieces:
                                 follow_mouse = True
-                            else:                                               # elif (current_turn == "blue" and active_pieces[selected_piece].team == "red") or (current_turn == "red" and active_pieces[selected_piece].team == "blue"):
+
+                                global movement_indicator
+                                movement_indicator = clases.Movement_Indicator((piece.pos_x, piece.pos_y))  # this creates the object of the magic string that connects the previos posicition and the new position of the piece
+
+                            else:
                                 print("No es tu turno")
 
                         elif current_turn == my_team and selected_piece != None:
@@ -1250,6 +1266,12 @@ while True:
 
                 if follow_mouse:  # if we were moving a piece
                     follow_mouse = False
+
+                    try:
+                        print("movement indicator deleted")
+                        del movement_indicator  # try deleting the magic string
+                    except:
+                        pass
 
                     change_mana = True
                     if active_uis["piece_selection"]:  # if the player is creating is alignment of pieces then dont consume their mana
