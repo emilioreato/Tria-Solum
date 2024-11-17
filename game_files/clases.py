@@ -1392,7 +1392,9 @@ class Particle:
         if deviation_percent >= 0.1:
             lifetime = 1  # Si está a 1/10 de la distancia, vida es 1ms
         else:
-            lifetime = 400 * (1 - deviation_percent / 0.1)  # 400ms para desviación 1%, 0ms para desviación 10%
+            # lifetime = 400 * (1 - deviation_percent / 0.1)  # 400ms para desviación 1%, 0ms para desviación 10%
+            normalized_deviation = deviation_percent / 0.1  # Normaliza a un rango [0, 1]
+            lifetime = 400 / (1 + 5 * normalized_deviation)
 
         return lifetime
 
@@ -1477,7 +1479,7 @@ class Movement_Indicator:  # Clase para el Indicador de Movimiento (hilo conecto
                 self.time_in_same_position = 0
 
         # Solo generar una partícula dorada cada segundo
-        if self.time_in_same_position >= 240 and random.randint(0, 100) < 5:  # 4 segundos en la misma posición
+        if self.time_in_same_position >= 240 and random.randint(0, 100) < 6:  # 4 segundos en la misma posición
             self.create_particle(pos, 2, Particle.GOLD_COLOR)
 
         else:
@@ -1490,7 +1492,7 @@ class Movement_Indicator:  # Clase para el Indicador de Movimiento (hilo conecto
             self.frame_count = 0  # Reiniciar contador
 
             # Seleccionar un 25% de las partículas aleatoriamente, pero sin exceder el número total de partículas
-            particles_to_check = random.sample(self.particles, min(len(self.particles), max(1, len(self.particles) // 4)))
+            particles_to_check = random.sample(self.particles, min(len(self.particles), max(1, len(self.particles) // 3)))
 
             # Recalcular la vida de las partículas seleccionadas
             for particle in particles_to_check:
