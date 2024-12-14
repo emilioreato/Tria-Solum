@@ -52,8 +52,8 @@ game.set_up_window(1.35)
 # my_team = "blue"
 
 active_uis = {
-    "intro": False,
-    "lobby": True,
+    "intro": True,
+    "lobby": False,
     "join_match": False,
     "join_match_ready": False,
     "match_creation": False,
@@ -133,18 +133,6 @@ current_volume = 0
 
 intro_path = {"video": "resources\\intro\\GambitGames.mp4",  # path of the video and the audio for the intro
               "audio": "resources\\intro\\intro_audio.mp3"}
-
-"""
-deck = clases.Deck()
-deck.shuffle_deck()  # Barajar el mazo
-
-inventory = clases.Inventory()
-inventory.refill_inventory(deck)  # Rellenar el inventario
-
-print("Contenido del inventario:")
-for card_type, cards in inventory.cards.items():
-    print(f"{card_type}: {[card.name for card in cards]}")
-"""
 
 # PROGRAM FUNCTIONS
 #

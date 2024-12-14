@@ -1,0 +1,62 @@
+ANIMACIONES:
+crear una unica clase particula q sea compartida por todas las animaciones
+
+animacion ataque de mago, arquero y caballero
+animacion indicador de  movimiento (yo implementada)
+
+cuando se aplica una posion de veneno ponele q se cambie el color del ataque
+y que cuando se aplique una posion de movimiento o velocidad o lo que sea se cambie el color de la anim de mov
+
+tambien cuando un jugador se cure o algo asi haya una explosion de particulas en su casilla
+
+tambien deberiamos implementar una mecanimca q promueva el accionar rapido asi la gente tiende a jugar mucho mas rapido
+por ejemplo q cada turno se mide el tiempo y el q lo haya hecho mas rapido a su turno regenera uno de vida en una de sus piezas al azar o algo asi
+
+tambien implementar un signo de pregunta en donde tocar y q te de info de cada cosa y objeto
+
+hay un mazo de cartas del cual puedes ir sacando cartas a cambio de mana. esas cartas se te guardan en el inventario y las puedes equipar cuando quieras al personaje q quieras y te dan beneficios o cambios de habilidad (entendidos como reduccion de cierta capacidad y aumento en otra)
+para rankear las cartas puedo usar las imagenes esas violetas y naranjas y doradas de rangos q tenia en descargas
+
+cada carta puede tener 1 carta aplicada sobre ella por una cuestion de simplicidad y de disñeo de ui
+
+mejorar la apariencia de la namebar y si tengo tiempo el de las barras de vida y mana tambien para q se vean mejor junto a la foto de cada pieza
+por cierto si hay dos piezas mago en las barras de vida habra dos de pieza mago identicas con lo cual no se sabra cual es cual: solucionar
+
+por otro lado tengo q mejorar los sonidos del juego ponele cuando estas moviendo una pieza q empiece a sonar un ruido a brass grave que cada vez sea mayor y genere tension para q dejes la pieza en su lugar
+ademas puedo hacer otro sonido ambiental de tension o ruido q aumente de volumen "infinitamente" hasta q el jugador cambia de turno entonces siempre siente la presion de jugar rapido
+
+tambien podria hacer sonidos de cuando las piezas reciben daño o lanzan un ataque.
+ruido cuando los ataques van viajando: como si fuera un auto de formula uno, un ruudio turbulento. para el ataque del arquero q sea un sonido mas agudo
+
+cuando este por terminar tengo q ver como ahcer q el installer instale todo lo necesario, que la carpeta del juego venga con un python embeded probablemente
+deberia intentar optimizar al final los puntos criticos con numba o algo asi sobre todo las funciones q solo son calculo matematico
+
+name_bar5 simplemente a name_bar
+
+insertar en la parte de configracion y apoyanos un link a nuestras redes, puede tambiene estar el link al github y algun instagram
+
+tengo q solucionar bugs q suceden cuando le das a crear partida o codigo dos veces seguidas o cuando creas y luego te salis al menu principal, no se, todo eso, simplemente deberia ser q si se vuelve a tocar q inicie de nuevo el proceso y que si se sale al menu recree el objeto sckt o sino q simplemente lo desconfigure al estado anterior
+
+deberia añadir mas opciones a la pestaña de configuracion como control de volumen sfx ademas del de musica
+
+solucioanr el tema de la lantencia q no se porque siempre termina restando como 5 segundos al q cambia de turno
+
+deberia hacer una pestaña q sea ayuda y q te explique todo, desde como entrar a partidas hasta q click tocar para atacar
+
+podria ver como implementar estructuras dentro del tablero q el enemigo pueda construir. q essas estructuras afecten el angulo de vision q seria para moverse y atacar
+ademas q esas estructuras 
+
+meter una especie de modo ligero para el incio de partida donde el mana es alto y en donde se pueden mover
+cuando quede menos tiempo entra en el modo desarollo donde las stats estan normales
+cuando quede muy poco tiempo metemos el modo saangriento en donde practicamente no hay mas mana o algo asi. como en clash royale. o bueno q el mana aumente, dps pienso eso.
+
+tambien ponele q al inicio de la partida cada uno con un slider elija ciertos parametros de la partida como el tiempo y el otro jugador tambien, que luego se revele lo q el otro eligio y se haga la media y esas sean las stats
+osea q si un jugador elije 5minuto y el otro 8 min se juega con 6 minutos 30 segundos. 
+
+debo mejorar la modularidad del codigo y la legibilidad porque ya con 3000 lineas esta imposible ni me imagino cuando termine todo esto
+
+hacer una intro de partida en donde se presente al rival cosas asi, q no dure mas de 5 segundos todo
+
+FLOWCHAT:
+ok ahora quiero q me des el codigo para que yo haga mi diagrama de flujo de los siguientes codigos. no me importa si te tomas 10 minutos para analizarlo todo, pero dame el diagrama de flujo mas fiel al programa posible, quiero q sea muy concreto y que mencione el nombre de las funciones reales del programa. entregame un resultado en ingles si es necesario para una mejor facilidad .ademas q el render final del png tenga mucha resolucion. todo el codigo viene en los siguientes archivos: main es el principal donde todo se ejecuta: https://github.com/emilioreato/Tria-Solum.  analiza el github completa e integramente.  piensa y analiza con toda tu capacidad y piensalo por 10 minutos o mas. quiero un diagrama de flujo extremadamente real y intuitivo para el que intente averiguar como funciona el codigo q hice.
+cuando lo hagas no le des prioridad a micro funciones sino q dale prioridad e importancia dentro del grafico a las funciones, elementos y condicionales que tengan un efecto significativo en el funcionamiento del programa y que en base a eso se desencadenen otras muchas cosas. no me importa si quedan muchisimas flechas interconectadas indicando dependencias y tal, quiero q el grafico sea extremadamente fiel al codigo.
